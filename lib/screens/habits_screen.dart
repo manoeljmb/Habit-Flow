@@ -12,15 +12,6 @@ class HabitsScreen extends StatefulWidget {
 
 class _HabitsScreenState extends State<HabitsScreen> {
 
-  List<bool?> weekData = [
-    true,
-    false,
-    true,
-    null,
-    true,
-    false,
-    true,
-  ];
   int get currentDayIndex {
     final now = DateTime.now();
     return now.weekday % 7;
@@ -48,19 +39,19 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
     setState(() {});
   }
-  void toggleDay(int index) {
+  void toggleDay(int habitIndex, int dayIndex) {
     setState(() {
-      List weekData = habits[0]["weekData"];
+      List weekData = habits[habitIndex]["weekData"];
 
-      if (weekData[index] == null) {
-        weekData[index] = true;
-      } else if (weekData[index] == true) {
-        weekData[index] = false;
+      if (weekData[dayIndex] == null) {
+        weekData[dayIndex] = true;
+      } else if (weekData[dayIndex] == true) {
+        weekData[dayIndex] = false;
       } else {
-        weekData[index] = null;
+        weekData[dayIndex] = null;
       }
 
-      habits[0]["weekData"] = weekData;
+      habits[habitIndex]["weekData"] = weekData;
       habitService.saveHabits(habits);
     });
   }
@@ -115,58 +106,76 @@ class _HabitsScreenState extends State<HabitsScreen> {
     );
   }
 
-  double get percentage {
-    final validDays = weekData.where((e) => e != null);
-    if (validDays.isEmpty) return 0;
-    final completed = validDays.where((e) => e == true);
-    return completed.length / validDays.length * 100;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Habits")),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Não beber",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        child: ListView.builder(
+          itemCount: habits.length,
+          itemBuilder: (context, habitIndex) {
+            final habit = habits[habitIndex];
+            final weekData = habit["weekData"].cast<bool?>();
+
+            final validDays = weekData.where((e) => e != null);
+            final completed = validDays.where((e) => e == true);
+            final percentage = validDays.isEmpty
+                ? 0
+                : completed.length / validDays.length * 100;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  Text(
+                    habit["name"],
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text("Sun"),
+                      Text("Mon"),
+                      Text("Tue"),
+                      Text("Wed"),
+                      Text("Thu"),
+                      Text("Fri"),
+                      Text("Sat"),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  GestureDetector(
+                    onLongPress: () {
+                      showMonthlyCalendar(context);
+                    },
+                    child: HabitWeekRow(
+                      weekData: weekData,
+                      currentDayIndex: currentDayIndex,
+                      onTap: (dayIndex) =>
+                          toggleDay(habitIndex, dayIndex),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Text(
+                    "Assertividade: ${percentage.toStringAsFixed(0)}%",
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text("Sun"),
-                Text("Mon"),
-                Text("Tue"),
-                Text("Wed"),
-                Text("Thu"),
-                Text("Fri"),
-                Text("Sat"),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            GestureDetector(
-              onLongPress: () {
-                showMonthlyCalendar(context);
-              },
-              child: HabitWeekRow(
-                weekData: habits[0]["weekData"].cast<bool?>(),
-                onTap: toggleDay,
-                currentDayIndex: currentDayIndex,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-            Text("Assertividade: ${percentage.toStringAsFixed(0)}%"),
-          ],
+            );
+          },
         ),
       ),
     );
