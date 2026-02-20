@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
 
 class HabitWeekRow extends StatelessWidget {
-  final List<bool?> weekData;
-  final Function(int) onTap;
-  final int currentDayIndex;
+  final List<DateTime> weekDates;
+  final Map<String, bool> dates;
+  final Function(DateTime) onTap;
 
   const HabitWeekRow({
     super.key,
-    required this.weekData,
+    required this.weekDates,
+    required this.dates,
     required this.onTap,
-    required this.currentDayIndex,
   });
-
-  Color getColor(bool? status) {
-    if (status == true) return Colors.green;
-    if (status == false) return Colors.grey.shade300;
-    return Colors.grey.shade700;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,21 +18,30 @@ class HabitWeekRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(7, (index) {
 
+        final date = weekDates[index];
+        final key = date.toIso8601String().split("T").first;
+        final status = dates[key];
+
+        Color color;
+        if (status == true) {
+          color = Colors.green;
+        } else if (status == false) {
+          color = Colors.grey.shade300;
+        } else {
+          color = Colors.grey.shade700;
+        }
+
         return GestureDetector(
-          onTap: () => onTap(index),
+          onTap: () => onTap(date),
           child: Container(
             width: 35,
             height: 35,
             decoration: BoxDecoration(
-              color: getColor(weekData[index]),
+              color: color,
               borderRadius: BorderRadius.circular(8),
-              border: index == currentDayIndex
-                  ? Border.all(color: Colors.blue, width: 2)
-                  : null,
             ),
           ),
         );
-
       }),
     );
   }

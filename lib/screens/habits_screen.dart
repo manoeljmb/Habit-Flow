@@ -23,7 +23,14 @@ class _HabitsScreenState extends State<HabitsScreen> {
     super.initState();
     loadHabits();
   }
+  List<DateTime> getCurrentWeek() {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday % 7));
 
+    return List.generate(7, (index) {
+      return startOfWeek.add(Duration(days: index));
+    });
+  }
   void confirmDeleteHabit(int habitIndex) {
     showDialog(
       context: context,
@@ -82,7 +89,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 setState(() {
                   habits.add({
                     "name": controller.text.trim(),
-                    "weekData": [null, null, null, null, null, null, null]
+                    "dates": {}
                   });
 
                   habitService.saveHabits(habits);
@@ -113,23 +120,26 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
     setState(() {});
   }
-  void toggleDay(int habitIndex, int dayIndex) {
+  void toggleDay(int habitIndex, DateTime date) {
     setState(() {
-      List weekData = habits[habitIndex]["weekData"];
+      final habit = habits[habitIndex];
+      Map dates = Map<String, bool>.from(habit["dates"] ?? {});
 
-      if (weekData[dayIndex] == null) {
-        weekData[dayIndex] = true;
-      } else if (weekData[dayIndex] == true) {
-        weekData[dayIndex] = false;
+      final key = date.toIso8601String().split("T").first;
+
+      if (!dates.containsKey(key)) {
+        dates[key] = true;
+      } else if (dates[key] == true) {
+        dates[key] = false;
       } else {
-        weekData[dayIndex] = null;
+        dates.remove(key);
       }
 
-      habits[habitIndex]["weekData"] = weekData;
+      habit["dates"] = dates;
       habitService.saveHabits(habits);
     });
   }
-  void showMonthlyCalendar(BuildContext context) {
+  void showMonthlyCalendar(BuildContext context, int habitIndex) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -159,12 +169,27 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   ),
                   itemBuilder: (context, index) {
                     final dayNumber = index + 1;
+                    final date = DateTime(now.year, now.month, dayNumber);
+                    final key = date.toIso8601String().split("T").first;
+
+                    final habit = habits[habitIndex];
+                    final dates = Map<String, bool>.from(habit["dates"] ?? {});
+                    final status = dates[key];
+
+                    Color color;
+                    if (status == true) {
+                      color = Colors.green;
+                    } else if (status == false) {
+                      color = Colors.grey.shade300;
+                    } else {
+                      color = Colors.grey.shade700;
+                    }
 
                     return Container(
                       margin: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(6),
-                        color: Colors.grey.shade300,
+                        color: color,
                       ),
                       child: Center(
                         child: Text(dayNumber.toString()),
@@ -191,13 +216,25 @@ class _HabitsScreenState extends State<HabitsScreen> {
           itemCount: habits.length,
           itemBuilder: (context, habitIndex) {
             final habit = habits[habitIndex];
-            final weekData = habit["weekData"].cast<bool?>();
+            final dates = Map<String, bool>.from(habit["dates"] ?? {});
+            final datesMap = Map<String, bool>.from(habit["dates"] ?? {});
+            final weekDates = getCurrentWeek();
 
-            final validDays = weekData.where((e) => e != null);
-            final completed = validDays.where((e) => e == true);
-            final percentage = validDays.isEmpty
-                ? 0
-                : completed.length / validDays.length * 100;
+            int completed = 0;
+            int total = 0;
+
+            for (final date in weekDates) {
+              final key = date.toIso8601String().split("T").first;
+
+              if (datesMap.containsKey(key)) {
+                total++;
+                if (datesMap[key] == true) {
+                  completed++;
+                }
+              }
+            }
+
+            final percentage = total == 0 ? 0 : (completed / total) * 100;
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 32),
@@ -241,13 +278,13 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
                   GestureDetector(
                     onLongPress: () {
-                      showMonthlyCalendar(context);
+                      showMonthlyCalendar(context, habitIndex);
                     },
                     child: HabitWeekRow(
-                      weekData: weekData,
-                      currentDayIndex: currentDayIndex,
-                      onTap: (dayIndex) =>
-                          toggleDay(habitIndex, dayIndex),
+                      weekDates: weekDates,
+                      dates: dates,
+                      onTap: (date) =>
+                          toggleDay(habitIndex, date),
                     ),
                   ),
 
