@@ -1,17 +1,39 @@
-# habitflow
+# HabitFlow
 
-A new Flutter project.
+HabitFlow é um aplicativo Flutter focado em organização pessoal, rotinas e controle de hábitos.
 
-## Getting Started
+O objetivo é fornecer um planner moderno com acompanhamento visual de desempenho, calendário inteligente e sistema de metas.
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## 🚀 Funcionalidades Planejadas
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### 📅 Planner
+- Calendário superior com:
+    - Dia numeral atual
+    - Nome do dia em inglês (Sun, Mon, Tue...)
+- Lista de tarefas
+- Criação rápida de tarefa
+- Organização por categorias
+- Adição rápida após ligação
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 🔁 Hábitos
+- Controle semanal visual:
+    - 🟢 Verde → hábito cumprido
+    - ⚪ Cinza claro → não cumprido
+    - ⚫ Cinza escuro → não programado
+- Percentual de assertividade
+- Visualização mensal detalhada
+- Sistema de streak
+- Timer para auxiliar cumprimento
+
+---
+
+## 🏗 Estrutura do Projeto
+habitflow/
+    └── lib/
+        ├── main.dart
+        ├── core/
+        ├── models/
+        ├── screens/
+        └── widgets/
