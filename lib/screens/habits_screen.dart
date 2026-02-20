@@ -24,6 +24,38 @@ class _HabitsScreenState extends State<HabitsScreen> {
     loadHabits();
   }
 
+  void confirmDeleteHabit(int habitIndex) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Excluir Hábito"),
+          content: const Text("Tem certeza que deseja excluir este hábito?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancelar"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  habits.removeAt(habitIndex);
+                  habitService.saveHabits(habits);
+                });
+
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text("Excluir"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void showAddHabitDialog() {
     final TextEditingController controller = TextEditingController();
 
@@ -173,12 +205,21 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
-                  Text(
-                    habit["name"],
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        habit["name"],
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => confirmDeleteHabit(habitIndex),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 12),
