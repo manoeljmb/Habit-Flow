@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/habit_week_row.dart';
+import '../services/habit_service.dart';
+
 
 class HabitsScreen extends StatefulWidget {
   const HabitsScreen({super.key});
@@ -23,8 +25,33 @@ class _HabitsScreenState extends State<HabitsScreen> {
     final now = DateTime.now();
     return now.weekday % 7;
   }
+  final HabitService habitService = HabitService();
+  List<Map> habits = [];
+  @override
+  void initState() {
+    super.initState();
+    loadHabits();
+  }
+
+  void loadHabits() {
+    habits = habitService.getHabits();
+
+    if (habits.isEmpty) {
+      habits = [
+        {
+          "name": "Não beber",
+          "weekData": [true, false, true, null, true, false, true]
+        }
+      ];
+      habitService.saveHabits(habits);
+    }
+
+    setState(() {});
+  }
   void toggleDay(int index) {
     setState(() {
+      List weekData = habits[0]["weekData"];
+
       if (weekData[index] == null) {
         weekData[index] = true;
       } else if (weekData[index] == true) {
@@ -32,6 +59,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
       } else {
         weekData[index] = null;
       }
+
+      habits[0]["weekData"] = weekData;
+      habitService.saveHabits(habits);
     });
   }
   void showMonthlyCalendar(BuildContext context) {
@@ -128,7 +158,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 showMonthlyCalendar(context);
               },
               child: HabitWeekRow(
-                weekData: weekData,
+                weekData: habits[0]["weekData"].cast<bool?>(),
                 onTap: toggleDay,
                 currentDayIndex: currentDayIndex,
               ),
