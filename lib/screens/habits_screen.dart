@@ -55,6 +55,20 @@ class _HabitsScreenState extends State<HabitsScreen> {
             ),
             const SizedBox(height: 12),
 
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text("Sun"),
+                Text("Mon"),
+                Text("Tue"),
+                Text("Wed"),
+                Text("Thu"),
+                Text("Fri"),
+                Text("Sat"),
+              ],
+            ),
+            const SizedBox(height: 8),
+
             HabitWeekRow(
               weekData: weekData,
               onTap: toggleDay,
