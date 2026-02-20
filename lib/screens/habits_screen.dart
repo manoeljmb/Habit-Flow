@@ -1,30 +1,70 @@
 import 'package:flutter/material.dart';
+import '../widgets/habit_week_row.dart';
 
-class HabitWeekRow extends StatelessWidget {
-  final List<bool?> weekData;
+class HabitsScreen extends StatefulWidget {
+  const HabitsScreen({super.key});
 
-  const HabitWeekRow({super.key, required this.weekData});
+  @override
+  State<HabitsScreen> createState() => _HabitsScreenState();
+}
 
-  Color getColor(bool? status) {
-    if (status == true) return Colors.green;
-    if (status == false) return Colors.grey.shade300;
-    return Colors.grey.shade700;
+class _HabitsScreenState extends State<HabitsScreen> {
+  List<bool?> weekData = [
+    true,
+    false,
+    true,
+    null,
+    true,
+    false,
+    true,
+  ];
+
+  void toggleDay(int index) {
+    setState(() {
+      if (weekData[index] == null) {
+        weekData[index] = true;
+      } else if (weekData[index] == true) {
+        weekData[index] = false;
+      } else {
+        weekData[index] = null;
+      }
+    });
+  }
+
+  double get percentage {
+    final validDays = weekData.where((e) => e != null);
+    if (validDays.isEmpty) return 0;
+    final completed = validDays.where((e) => e == true);
+    return completed.length / validDays.length * 100;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(7, (index) {
-        return Container(
-          width: 35,
-          height: 35,
-          decoration: BoxDecoration(
-            color: getColor(weekData[index]),
-            borderRadius: BorderRadius.circular(8),
-          ),
-        );
-      }),
+    return Scaffold(
+      appBar: AppBar(title: const Text("Habits")),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "Não beber",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            HabitWeekRow(
+              weekData: weekData,
+              onTap: toggleDay,
+            ),
+
+            const SizedBox(height: 16),
+            Text("Assertividade: ${percentage.toStringAsFixed(0)}%"),
+          ],
+        ),
+      ),
     );
   }
 }
