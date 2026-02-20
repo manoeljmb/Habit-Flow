@@ -24,6 +24,48 @@ class _HabitsScreenState extends State<HabitsScreen> {
     loadHabits();
   }
 
+  void showAddHabitDialog() {
+    final TextEditingController controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Novo Hábito"),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: "Digite o nome do hábito",
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancelar"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (controller.text.trim().isEmpty) return;
+
+                setState(() {
+                  habits.add({
+                    "name": controller.text.trim(),
+                    "weekData": [null, null, null, null, null, null, null]
+                  });
+
+                  habitService.saveHabits(habits);
+                });
+
+                Navigator.pop(context);
+              },
+              child: const Text("Criar"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void loadHabits() {
     habits = habitService.getHabits();
 
@@ -110,6 +152,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Habits")),
+
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView.builder(
@@ -177,6 +220,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
             );
           },
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: showAddHabitDialog,
+        child: const Icon(Icons.add),
       ),
     );
   }
