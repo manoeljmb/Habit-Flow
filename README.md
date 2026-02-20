@@ -37,3 +37,55 @@ habitflow/
         ├── models/
         ├── screens/
         └── widgets/
+
+
+---
+
+## 🛠 Tecnologias
+
+- Flutter
+- Dart
+- Material 3
+- intl (formatação de datas)
+
+---
+
+## 📦 Instalação
+
+```bash
+flutter pub get
+flutter run
+
+📌 Roadmap
+
+ CRUD completo de tarefas
+
+ Banco local (Hive ou SQLite)
+
+ Sistema de hábitos funcional
+
+ Cálculo de estatísticas
+
+ Timer integrado
+
+ Persistência de dados
+
+ Design refinado (UI/UX)
+
+
+👨‍💻 Autor
+
+Manoel Jorge
+
+📄 Licença
+
+Projeto para fins educacionais.
+
+
+---
+
+Depois faça commit:
+
+```bash
+git add README.md
+git commit -m "docs: add project README"
