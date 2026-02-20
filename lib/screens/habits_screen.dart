@@ -31,6 +31,56 @@ class _HabitsScreenState extends State<HabitsScreen> {
       return startOfWeek.add(Duration(days: index));
     });
   }
+  Map<String, int> calculateStreak(Map<String, bool> datesMap) {
+    final today = DateTime.now();
+    int currentStreak = 0;
+    int bestStreak = 0;
+    int tempStreak = 0;
+
+    final sortedKeys = datesMap.keys.toList()..sort();
+
+    DateTime? previousDate;
+
+    for (final key in sortedKeys) {
+      final date = DateTime.parse(key);
+
+      if (datesMap[key] == true) {
+        if (previousDate != null &&
+            date.difference(previousDate).inDays == 1) {
+          tempStreak++;
+        } else {
+          tempStreak = 1;
+        }
+
+        if (tempStreak > bestStreak) {
+          bestStreak = tempStreak;
+        }
+
+        previousDate = date;
+      } else {
+        tempStreak = 0;
+        previousDate = null;
+      }
+    }
+
+    // calcular streak atual (até hoje)
+    DateTime checkDate = today;
+    while (true) {
+      final key = checkDate.toIso8601String().split("T").first;
+      if (datesMap[key] == true) {
+        currentStreak++;
+        checkDate = checkDate.subtract(const Duration(days: 1));
+      } else {
+        break;
+      }
+    }
+
+    return {
+      "current": currentStreak,
+      "best": bestStreak,
+    };
+  }
+
   void confirmDeleteHabit(int habitIndex) {
     showDialog(
       context: context,
@@ -218,6 +268,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
             final habit = habits[habitIndex];
             final dates = Map<String, bool>.from(habit["dates"] ?? {});
             final datesMap = Map<String, bool>.from(habit["dates"] ?? {});
+            final streakData = calculateStreak(datesMap);
             final weekDates = getCurrentWeek();
 
             int completed = 0;
@@ -292,6 +343,11 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
                   Text(
                     "Assertividade: ${percentage.toStringAsFixed(0)}%",
+                  ),
+                  const SizedBox(height: 6),
+
+                  Text(
+                    "🔥 Atual: ${streakData["current"]} dias | 🏆 Melhor: ${streakData["best"]} dias",
                   ),
                 ],
               ),
