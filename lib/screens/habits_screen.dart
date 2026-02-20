@@ -34,6 +34,56 @@ class _HabitsScreenState extends State<HabitsScreen> {
       }
     });
   }
+  void showMonthlyCalendar(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        final now = DateTime.now();
+        final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          height: 500,
+          child: Column(
+            children: [
+              Text(
+                "${now.month}/${now.year}",
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: GridView.builder(
+                  itemCount: daysInMonth,
+                  gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                  ),
+                  itemBuilder: (context, index) {
+                    final dayNumber = index + 1;
+
+                    return Container(
+                      margin: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        color: Colors.grey.shade300,
+                      ),
+                      child: Center(
+                        child: Text(dayNumber.toString()),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   double get percentage {
     final validDays = weekData.where((e) => e != null);
@@ -73,10 +123,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
             ),
             const SizedBox(height: 8),
 
-            HabitWeekRow(
-              weekData: weekData,
-              onTap: toggleDay,
-              currentDayIndex: currentDayIndex,
+            GestureDetector(
+              onLongPress: () {
+                showMonthlyCalendar(context);
+              },
+              child: HabitWeekRow(
+                weekData: weekData,
+                onTap: toggleDay,
+                currentDayIndex: currentDayIndex,
+              ),
             ),
 
             const SizedBox(height: 16),
