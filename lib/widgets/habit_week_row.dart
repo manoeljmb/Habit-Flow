@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class HabitWeekRow extends StatelessWidget {
   final List<bool?> weekData;
   final Function(int) onTap;
+  final int currentDayIndex;
 
   const HabitWeekRow({
     super.key,
     required this.weekData,
     required this.onTap,
+    required this.currentDayIndex,
   });
 
   Color getColor(bool? status) {
@@ -30,6 +32,9 @@ class HabitWeekRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: getColor(weekData[index]),
               borderRadius: BorderRadius.circular(8),
+              border: index == currentDayIndex
+                  ? Border.all(color: Colors.blue, width: 2)
+                  : null,
             ),
           ),
         );

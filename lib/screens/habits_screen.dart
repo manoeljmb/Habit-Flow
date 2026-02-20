@@ -9,6 +9,7 @@ class HabitsScreen extends StatefulWidget {
 }
 
 class _HabitsScreenState extends State<HabitsScreen> {
+
   List<bool?> weekData = [
     true,
     false,
@@ -18,7 +19,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
     false,
     true,
   ];
-
+  int get currentDayIndex {
+    final now = DateTime.now();
+    return now.weekday % 7;
+  }
   void toggleDay(int index) {
     setState(() {
       if (weekData[index] == null) {
@@ -72,6 +76,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
             HabitWeekRow(
               weekData: weekData,
               onTap: toggleDay,
+              currentDayIndex: currentDayIndex,
             ),
 
             const SizedBox(height: 16),
