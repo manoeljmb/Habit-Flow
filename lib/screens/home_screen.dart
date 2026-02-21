@@ -212,11 +212,12 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
 
                 // Título
-                const Text(
+                Text(
                   "Today",
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: 30,
                     fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
 
@@ -282,6 +283,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: 8,
+                    backgroundColor: Colors.grey.shade200,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
 
@@ -339,9 +342,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     });
                   },
                   child: Card(
-                    elevation: 3,
+                    elevation: 0,
+                    color: Colors.white,
+                    shadowColor: Colors.black.withOpacity(0.05),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     margin: const EdgeInsets.symmetric(
                       horizontal: 12,
