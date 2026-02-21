@@ -181,52 +181,143 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredTasks = getTasksForSelectedDate();
+
+    double progress = 0;
+
+    if (filteredTasks.isNotEmpty) {
+      final done =
+          filteredTasks.where((t) => t["completed"] == true).length;
+      progress = done / filteredTasks.length;
+    }
+
     return Scaffold(
 
       appBar: AppBar(title: const Text("Today")),
       body: Column(
         children: [
 
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  Colors.transparent,
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () {
-                    setState(() {
-                      selectedDate =
-                          selectedDate.subtract(const Duration(days: 1));
-                    });
-                  },
-                ),
-
-                Text(
-                  "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                  style: const TextStyle(
-                    fontSize: 18,
+                // Título
+                const Text(
+                  "Today",
+                  style: TextStyle(
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
 
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: () {
-                    setState(() {
-                      selectedDate =
-                          selectedDate.add(const Duration(days: 1));
-                    });
-                  },
+                const SizedBox(height: 6),
+
+                // Data
+                Text(
+                  "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Navegação elegante
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left),
+                      onPressed: () {
+                        setState(() {
+                          selectedDate =
+                              selectedDate.subtract(const Duration(days: 1));
+                        });
+                      },
+                    ),
+
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          selectedDate = DateTime.now();
+                        });
+                      },
+                      child: const Text("Voltar para Hoje"),
+                    ),
+
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right),
+                      onPressed: () {
+                        setState(() {
+                          selectedDate =
+                              selectedDate.add(const Duration(days: 1));
+                        });
+                      },
+                    ),
+
+                  ],
                 ),
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Column(
+              children: [
 
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  "${(progress * 100).toInt()}% concluído",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+
+              ],
+            ),
+          ),
           Expanded(
             child: filteredTasks.isEmpty
-                ? const Center(child: Text("Nenhuma tarefa"))
+                ? Center(
+                child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+    Icon(Icons.task_alt,
+    size: 60, color: Colors.grey.shade400),
+    const SizedBox(height: 12),
+    Text(
+    "Nenhuma tarefa para este dia",
+    style: TextStyle(
+    fontSize: 16,
+    color: Colors.grey.shade600,
+    ),
+    ),
+    ],
+    ),
+    )
                 : ListView.builder(
               itemCount: filteredTasks.length,
               itemBuilder: (context, index) {
@@ -306,14 +397,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           // Checkbox
                           Transform.scale(
                             scale: 1.2,
-                            child: Checkbox(
-                              value: task["completed"],
-                              onChanged: (value) {
-                                setState(() {
-                                  task["completed"] = value;
-                                  taskService.saveTasks(tasks);
-                                });
-                              },
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              child: Checkbox(
+                                key: ValueKey(task["completed"]),
+                                value: task["completed"],
+                                onChanged: (value) {
+                                  setState(() {
+                                    task["completed"] = value;
+                                    taskService.saveTasks(tasks);
+                                  });
+                                },
+                              ),
                             ),
                           ),
                         ],
