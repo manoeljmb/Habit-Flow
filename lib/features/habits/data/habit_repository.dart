@@ -1,3 +1,4 @@
+import '../domain/habit.dart';
 import 'habit_datasource.dart';
 
 class HabitRepository {
@@ -5,11 +6,15 @@ class HabitRepository {
 
   HabitRepository(this.datasource);
 
-  List<Map> getHabits() {
+  List<Habit> getHabits() {
     return datasource.getHabits();
   }
 
-  void saveHabits(List<Map> habits) {
-    datasource.saveHabits(habits);
+  Future<void> addHabit(Habit habit) {
+    return datasource.saveHabit(habit);
+  }
+
+  Future<void> deleteHabit(String id) {
+    return datasource.deleteHabit(id);
   }
 }

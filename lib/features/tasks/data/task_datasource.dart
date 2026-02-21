@@ -1,13 +1,18 @@
 import 'package:hive/hive.dart';
+import '../domain/task.dart';
 
 class TaskDatasource {
-  final Box box = Hive.box('tasksBox');
+  final Box<Task> box = Hive.box<Task>('tasksBox');
 
-  List<Map> getTasks() {
-    return box.get('tasks', defaultValue: []).cast<Map>();
+  List<Task> getTasks() {
+    return box.values.toList();
   }
 
-  void saveTasks(List<Map> tasks) {
-    box.put('tasks', tasks);
+  Future<void> saveTask(Task task) async {
+    await box.put(task.id, task);
+  }
+
+  Future<void> deleteTask(String id) async {
+    await box.delete(id);
   }
 }

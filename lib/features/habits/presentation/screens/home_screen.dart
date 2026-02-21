@@ -4,7 +4,8 @@ import '../../data/habit_repository.dart';
 import '../../data/habit_datasource.dart';
 import '../../../tasks/data/task_repository.dart';
 import '../../../tasks/data/task_datasource.dart';
-
+import 'package:habitflow/features/habits/domain/habit.dart';
+import 'package:habitflow/features/tasks/domain/task.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,7 +19,8 @@ class _HomeScreenState extends State<HomeScreen> {
   TaskRepository(TaskDatasource());
 
   DateTime selectedDate = DateTime.now();
-  List<Map> tasks = [];
+  List<Habit> habits = [];
+  List<Task> tasks = [];
 
   @override
   void initState() {
@@ -39,9 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  List<Map> getTasksForSelectedDate() {
+  List<Task> getTasksForSelectedDate() {
     return tasks.where((task) {
-      final taskDate = DateTime.parse(task["date"]);
+      final taskDate = task.date;
 
       return taskDate.year == selectedDate.year &&
           taskDate.month == selectedDate.month &&
@@ -49,16 +51,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  void showTaskDialog({Map? existingTask}) {
+  void showTaskDialog({Task? existingTask}) {
     final titleController =
-    TextEditingController(text: existingTask?["title"] ?? "");
+    TextEditingController(text: existingTask?.title ?? "");
 
     String selectedCategory =
-        existingTask?["category"] ?? "General";
+        existingTask?.category ?? "General";
 
-    DateTime selectedDate = existingTask != null
-        ? DateTime.parse(existingTask["date"])
-        : DateTime.now();
+    DateTime selectedDate =
+        existingTask?.date ?? DateTime.now();
 
     showDialog(
       context: context,
@@ -135,36 +136,30 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Text("Cancelar"),
             ),
             ElevatedButton(
-              onPressed: () {
-                if (titleController.text.trim().isEmpty)
-                  return;
+              onPressed: () async {
+                if (titleController.text.trim().isEmpty) return;
 
                 if (existingTask == null) {
-                  // CRIAR
-                  final newTask = {
-                    "id":
-                    DateTime.now().toIso8601String(),
-                    "title":
-                    titleController.text.trim(),
-                    "category": selectedCategory,
-                    "date":
-                    selectedDate.toIso8601String(),
-                    "completed": false,
-                  };
+                  final newTask = Task(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    title: titleController.text.trim(),
+                    date: selectedDate,
+                    isDone: false,
+                    category: selectedCategory,
+                  );
 
-                  tasks.add(newTask);
+                  await taskRepository.addTask(newTask);
                 } else {
-                  // EDITAR
-                  existingTask["title"] =
-                      titleController.text.trim();
-                  existingTask["category"] =
-                      selectedCategory;
-                  existingTask["date"] =
-                      selectedDate.toIso8601String();
+                  final updatedTask = existingTask.copyWith(
+                    title: titleController.text.trim(),
+                    category: selectedCategory,
+                    date: selectedDate,
+                  );
+
+                  await taskRepository.addTask(updatedTask);
                 }
 
-                taskRepository.saveTasks(tasks);
-                setState(() {});
+                loadTasks();
                 Navigator.pop(context);
               },
               child: Text(
@@ -190,8 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
     double progress = 0;
 
     if (filteredTasks.isNotEmpty) {
-      final done =
-          filteredTasks.where((t) => t["completed"] == true).length;
+      final done = filteredTasks.where((t) => t.isDone).length;
       progress = done / filteredTasks.length;
     }
 
@@ -374,9 +368,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  Widget buildPremiumTaskCard(Map task) {
+  Widget buildPremiumTaskCard(Task task) {
     return Dismissible(
-      key: Key(task["id"]),
+      key: Key(task.id),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
@@ -384,11 +378,9 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Colors.red,
         child: const Icon(Icons.delete, color: Colors.white),
       ),
-      onDismissed: (_) {
-        setState(() {
-          tasks.removeWhere((t) => t["id"] == task["id"]);
-          taskRepository.saveTasks(tasks);
-        });
+      onDismissed: (_) async {
+        await taskRepository.deleteTask(task.id);
+        loadTasks();
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -411,7 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 4,
               height: 40,
               decoration: BoxDecoration(
-                color: getCategoryColor(task["category"]),
+                color: getCategoryColor(task.category),
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -424,11 +416,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
 
                   Text(
-                    task["title"],
+                    task.title,
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      decoration: task["completed"]
+                      decoration: task.isDone
                           ? TextDecoration.lineThrough
                           : null,
                     ),
@@ -437,10 +429,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 6),
 
                   Text(
-                    task["category"],
+                    task.category,
                     style: TextStyle(
                       fontSize: 12,
-                      color: getCategoryColor(task["category"]),
+                      color: getCategoryColor(task.category),
                     ),
                   ),
                 ],
@@ -449,19 +441,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
             IconButton(
               icon: Icon(
-                task["completed"]
+                task.isDone
                     ? Icons.check_circle
                     : Icons.radio_button_unchecked,
-                color: task["completed"]
+
+                color: task.isDone
                     ? Theme.of(context).colorScheme.primary
                     : Colors.grey.shade400,
               ),
-              onPressed: () {
-                setState(() {
-                  task["completed"] =
-                  !(task["completed"] ?? false);
-                  taskRepository.saveTasks(tasks);
-                });
+              onPressed: () async {
+                final updatedTask = task.copyWith(
+                  isDone: !task.isDone,
+                );
+
+                await taskRepository.addTask(updatedTask);
+                loadTasks();
               },
             ),
           ],

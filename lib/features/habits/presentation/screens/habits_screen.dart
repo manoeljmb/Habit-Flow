@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/habit_datasource.dart';
 import '../../data/habit_repository.dart';
 import '../widgets/habit_week_row.dart';
+import 'package:habitflow/features/habits/domain/habit.dart';
 
 
 class HabitsScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
   final HabitRepository habitRepository =
   HabitRepository(HabitDatasource());
-  List<Map> habits = [];
+  List<Habit> habits = [];
   @override
   void initState() {
     super.initState();
@@ -33,43 +34,53 @@ class _HabitsScreenState extends State<HabitsScreen> {
       return startOfWeek.add(Duration(days: index));
     });
   }
-  Map<String, int> calculateStreak(Map<String, bool> datesMap) {
-    final today = DateTime.now();
-    int currentStreak = 0;
+  Map<String, int> calculateStreak(List<DateTime> completedDates) {
+    if (completedDates.isEmpty) {
+      return {
+        "current": 0,
+        "best": 0,
+      };
+    }
+
+    // Normalizar datas (remover hora)
+    final dates = completedDates
+        .map((d) => DateTime(d.year, d.month, d.day))
+        .toSet()
+        .toList()
+      ..sort((a, b) => a.compareTo(b));
+
     int bestStreak = 0;
-    int tempStreak = 0;
+    int tempStreak = 1;
 
-    final sortedKeys = datesMap.keys.toList()..sort();
+    for (int i = 1; i < dates.length; i++) {
+      final diff = dates[i].difference(dates[i - 1]).inDays;
 
-    DateTime? previousDate;
-
-    for (final key in sortedKeys) {
-      final date = DateTime.parse(key);
-
-      if (datesMap[key] == true) {
-        if (previousDate != null &&
-            date.difference(previousDate).inDays == 1) {
-          tempStreak++;
-        } else {
-          tempStreak = 1;
-        }
-
+      if (diff == 1) {
+        tempStreak++;
+      } else {
         if (tempStreak > bestStreak) {
           bestStreak = tempStreak;
         }
-
-        previousDate = date;
-      } else {
-        tempStreak = 0;
-        previousDate = null;
+        tempStreak = 1;
       }
     }
 
-    // calcular streak atual (até hoje)
-    DateTime checkDate = today;
+    if (tempStreak > bestStreak) {
+      bestStreak = tempStreak;
+    }
+
+    // calcular streak atual
+    int currentStreak = 0;
+    DateTime checkDate = DateTime.now();
+    checkDate = DateTime(checkDate.year, checkDate.month, checkDate.day);
+
     while (true) {
-      final key = checkDate.toIso8601String().split("T").first;
-      if (datesMap[key] == true) {
+      final exists = dates.any((d) =>
+      d.year == checkDate.year &&
+          d.month == checkDate.month &&
+          d.day == checkDate.day);
+
+      if (exists) {
         currentStreak++;
         checkDate = checkDate.subtract(const Duration(days: 1));
       } else {
@@ -96,11 +107,11 @@ class _HabitsScreenState extends State<HabitsScreen> {
               child: const Text("Cancelar"),
             ),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  habits.removeAt(habitIndex);
-                  habitRepository.saveHabits(habits);
-                });
+              onPressed: () async {
+                final habit = habits[habitIndex];
+
+                await habitRepository.deleteHabit(habit.id);
+                loadHabits();
 
                 Navigator.pop(context);
               },
@@ -117,17 +128,62 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
   void showAddHabitDialog() {
     final TextEditingController controller = TextEditingController();
+    List<int> selectedDays = [1, 2, 3, 4, 5, 6, 7];
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text("Novo Hábito"),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              hintText: "Digite o nome do hábito",
-            ),
+          content: StatefulBuilder(
+            builder: (context, setModalState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      hintText: "Digite o nome do hábito",
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "Dias da semana",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Wrap(
+                    spacing: 8,
+                    children: List.generate(7, (index) {
+                      final day = index + 1;
+                      final isSelected = selectedDays.contains(day);
+
+                      return ChoiceChip(
+                        label: Text(
+                          ["S", "T", "Q", "Q", "S", "S", "D"][index],
+                        ),
+                        selected: isSelected,
+                        onSelected: (_) {
+                          setModalState(() {
+                            if (isSelected) {
+                              selectedDays.remove(day);
+                            } else {
+                              selectedDays.add(day);
+                            }
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                ],
+              );
+            },
           ),
           actions: [
             TextButton(
@@ -135,17 +191,18 @@ class _HabitsScreenState extends State<HabitsScreen> {
               child: const Text("Cancelar"),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (controller.text.trim().isEmpty) return;
 
-                setState(() {
-                  habits.add({
-                    "name": controller.text.trim(),
-                    "dates": {}
-                  });
+                final newHabit = Habit(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  title: controller.text.trim(),
+                  completedDates: [],
+                  activeWeekdays: selectedDays,
+                );
 
-                  habitRepository.saveHabits(habits);
-                });
+                await habitRepository.addHabit(newHabit);
+                await loadHabits();
 
                 Navigator.pop(context);
               },
@@ -157,39 +214,50 @@ class _HabitsScreenState extends State<HabitsScreen> {
     );
   }
 
-  void loadHabits() {
+  Future<void> loadHabits() async {
     habits = habitRepository.getHabits();
 
     if (habits.isEmpty) {
-      habits = [
-        {
-          "name": "Não beber",
-          "weekData": [true, false, true, null, true, false, true]
-        }
-      ];
-      habitRepository.saveHabits(habits);
+      final defaultHabit = Habit(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: "Não beber",
+        completedDates: [],
+        activeWeekdays: [1, 2, 3, 4, 5, 6, 7], // todos os dias
+      );
+
+      await habitRepository.addHabit(defaultHabit);
+      habits = habitRepository.getHabits();
     }
 
     setState(() {});
   }
-  void toggleDay(int habitIndex, DateTime date) {
-    setState(() {
-      final habit = habits[habitIndex];
-      Map dates = Map<String, bool>.from(habit["dates"] ?? {});
+  Future<void> toggleDay(int habitIndex, DateTime date) async {
+    final habit = habits[habitIndex];
 
-      final key = date.toIso8601String().split("T").first;
+    final dateOnly = DateTime(date.year, date.month, date.day);
 
-      if (!dates.containsKey(key)) {
-        dates[key] = true;
-      } else if (dates[key] == true) {
-        dates[key] = false;
-      } else {
-        dates.remove(key);
-      }
+    List<DateTime> updatedDates = List.from(habit.completedDates);
 
-      habit["dates"] = dates;
-      habitRepository.saveHabits(habits);
-    });
+    final exists = updatedDates.any((d) =>
+    d.year == dateOnly.year &&
+        d.month == dateOnly.month &&
+        d.day == dateOnly.day);
+
+    if (exists) {
+      updatedDates.removeWhere((d) =>
+      d.year == dateOnly.year &&
+          d.month == dateOnly.month &&
+          d.day == dateOnly.day);
+    } else {
+      updatedDates.add(dateOnly);
+    }
+
+    final updatedHabit = habit.copyWith(
+      completedDates: updatedDates,
+    );
+
+    await habitRepository.addHabit(updatedHabit);
+    loadHabits();
   }
   void showMonthlyCalendar(BuildContext context, int habitIndex) {
     showModalBottomSheet(
@@ -225,8 +293,14 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     final key = date.toIso8601String().split("T").first;
 
                     final habit = habits[habitIndex];
-                    final dates = Map<String, bool>.from(habit["dates"] ?? {});
-                    final status = dates[key];
+
+                    final dates = habit.completedDates;
+                    final dateOnly = DateTime.parse(key);
+
+                    final status = dates.any((d) =>
+                    d.year == dateOnly.year &&
+                        d.month == dateOnly.month &&
+                        d.day == dateOnly.day);
 
                     Color color;
                     if (status == true) {
@@ -268,22 +342,27 @@ class _HabitsScreenState extends State<HabitsScreen> {
           itemCount: habits.length,
           itemBuilder: (context, habitIndex) {
             final habit = habits[habitIndex];
-            final dates = Map<String, bool>.from(habit["dates"] ?? {});
-            final datesMap = Map<String, bool>.from(habit["dates"] ?? {});
-            final streakData = calculateStreak(datesMap);
+
+            final dates = habit.completedDates;
+
+            final streakData = calculateStreak(dates);
             final weekDates = getCurrentWeek();
 
             int completed = 0;
             int total = 0;
 
             for (final date in weekDates) {
-              final key = date.toIso8601String().split("T").first;
+              final normalized = DateTime(date.year, date.month, date.day);
 
-              if (datesMap.containsKey(key)) {
-                total++;
-                if (datesMap[key] == true) {
-                  completed++;
-                }
+              final exists = dates.any((d) =>
+              d.year == normalized.year &&
+                  d.month == normalized.month &&
+                  d.day == normalized.day);
+
+              total++;
+
+              if (exists) {
+                completed++;
               }
             }
 
@@ -299,7 +378,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        habit["name"],
+                        habit.title,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,

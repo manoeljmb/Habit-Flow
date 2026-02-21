@@ -1,13 +1,18 @@
 import 'package:hive/hive.dart';
+import '../domain/habit.dart';
 
 class HabitDatasource {
-  final Box box = Hive.box('habitsBox');
+  final Box<Habit> box = Hive.box<Habit>('habitsBox');
 
-  List<Map> getHabits() {
-    return box.get('habits', defaultValue: []).cast<Map>();
+  List<Habit> getHabits() {
+    return box.values.toList();
   }
 
-  void saveHabits(List<Map> habits) {
-    box.put('habits', habits);
+  Future<void> saveHabit(Habit habit) async {
+    await box.put(habit.id, habit);
+  }
+
+  Future<void> deleteHabit(String id) async {
+    await box.delete(id);
   }
 }

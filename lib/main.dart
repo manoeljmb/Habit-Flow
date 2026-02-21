@@ -3,12 +3,20 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:habitflow/core/theme/app_colors.dart';
 import 'package:habitflow/features/habits/presentation/screens/home_screen.dart';
 import 'package:habitflow/features/habits/presentation/screens/habits_screen.dart';
+import 'package:habitflow/features/habits/domain/habit.dart';
+import 'package:habitflow/features/tasks/domain/task.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-  await Hive.openBox('habitsBox');
-  await Hive.openBox('tasksBox');
+
+  Hive.registerAdapter(HabitAdapter());
+  Hive.registerAdapter(TaskAdapter());
+
+  await Hive.openBox<Habit>('habitsBox');
+  await Hive.openBox<Task>('tasksBox');
+
   runApp(const PlannerApp());
 }
 

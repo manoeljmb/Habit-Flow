@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class HabitWeekRow extends StatelessWidget {
   final List<DateTime> weekDates;
-  final Map<String, bool> dates;
+  final List<DateTime> dates;
   final Function(DateTime) onTap;
 
   const HabitWeekRow({
@@ -19,8 +19,12 @@ class HabitWeekRow extends StatelessWidget {
       children: List.generate(7, (index) {
 
         final date = weekDates[index];
-        final key = date.toIso8601String().split("T").first;
-        final status = dates[key];
+        final normalized = DateTime(date.year, date.month, date.day);
+
+        final status = dates.any((d) =>
+        d.year == normalized.year &&
+            d.month == normalized.month &&
+            d.day == normalized.day);
 
         Color color;
         if (status == true) {

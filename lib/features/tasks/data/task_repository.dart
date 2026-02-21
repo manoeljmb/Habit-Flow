@@ -1,3 +1,4 @@
+import '../domain/task.dart';
 import 'task_datasource.dart';
 
 class TaskRepository {
@@ -5,11 +6,15 @@ class TaskRepository {
 
   TaskRepository(this.datasource);
 
-  List<Map> getTasks() {
+  List<Task> getTasks() {
     return datasource.getTasks();
   }
 
-  void saveTasks(List<Map> tasks) {
-    datasource.saveTasks(tasks);
+  Future<void> addTask(Task task) {
+    return datasource.saveTask(task);
+  }
+
+  Future<void> deleteTask(String id) {
+    return datasource.deleteTask(id);
   }
 }
