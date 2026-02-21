@@ -31,31 +31,36 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  void showAddTaskDialog() {
-    final titleController = TextEditingController();
-    String selectedCategory = "General";
-    DateTime selectedDate = DateTime.now();
+  void showTaskDialog({Map? existingTask}) {
+    final titleController =
+    TextEditingController(text: existingTask?["title"] ?? "");
+
+    String selectedCategory =
+        existingTask?["category"] ?? "General";
+
+    DateTime selectedDate = existingTask != null
+        ? DateTime.parse(existingTask["date"])
+        : DateTime.now();
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Nova Tarefa"),
+          title: Text(
+            existingTask == null ? "Nova Tarefa" : "Editar Tarefa",
+          ),
           content: StatefulBuilder(
             builder: (context, setModalState) {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-
                   TextField(
                     controller: titleController,
                     decoration: const InputDecoration(
                       hintText: "Digite a tarefa",
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   DropdownButtonFormField<String>(
                     value: selectedCategory,
                     items: ["General", "Work", "Study", "Health"]
@@ -72,18 +77,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       });
                     },
                   ),
-
                   const SizedBox(height: 12),
-
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
                       ),
                       TextButton(
                         onPressed: () async {
-                          final picked = await showDatePicker(
+                          final picked =
+                          await showDatePicker(
                             context: context,
                             initialDate: selectedDate,
                             firstDate: DateTime(2020),
@@ -96,7 +101,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             });
                           }
                         },
-                        child: const Text("Selecionar Data"),
+                        child:
+                        const Text("Selecionar Data"),
                       ),
                     ],
                   ),
@@ -106,29 +112,48 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () =>
+                  Navigator.pop(context),
               child: const Text("Cancelar"),
             ),
             ElevatedButton(
               onPressed: () {
-                if (titleController.text.trim().isEmpty) return;
+                if (titleController.text.trim().isEmpty)
+                  return;
 
-                final newTask = {
-                  "id": DateTime.now().toIso8601String(),
-                  "title": titleController.text.trim(),
-                  "category": selectedCategory,
-                  "date": selectedDate.toIso8601String(),
-                  "completed": false,
-                };
+                if (existingTask == null) {
+                  // CRIAR
+                  final newTask = {
+                    "id":
+                    DateTime.now().toIso8601String(),
+                    "title":
+                    titleController.text.trim(),
+                    "category": selectedCategory,
+                    "date":
+                    selectedDate.toIso8601String(),
+                    "completed": false,
+                  };
 
-                setState(() {
                   tasks.add(newTask);
-                  taskService.saveTasks(tasks);
-                });
+                } else {
+                  // EDITAR
+                  existingTask["title"] =
+                      titleController.text.trim();
+                  existingTask["category"] =
+                      selectedCategory;
+                  existingTask["date"] =
+                      selectedDate.toIso8601String();
+                }
 
+                taskService.saveTasks(tasks);
+                setState(() {});
                 Navigator.pop(context);
               },
-              child: const Text("Criar"),
+              child: Text(
+                existingTask == null
+                    ? "Criar"
+                    : "Salvar",
+              ),
             ),
           ],
         );
@@ -211,6 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     });
                   },
                   child: ListTile(
+                    onTap: () => showTaskDialog(existingTask: task),
                     title: Text(task["title"]),
                     subtitle: Text(task["category"]),
                     trailing: Checkbox(
@@ -230,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: showAddTaskDialog,
+        onPressed: () => showTaskDialog(),
         child: const Icon(Icons.add),
       ),
 
