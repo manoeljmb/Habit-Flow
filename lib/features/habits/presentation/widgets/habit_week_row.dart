@@ -24,19 +24,19 @@ class HabitWeekRow extends StatelessWidget {
 
         final isActive = activeWeekdays.contains(date.weekday);
 
-        final isCompleted = dates.any((d) =>
-        d.year == normalized.year &&
+        final isCompleted = isActive && dates.any((d) =>
+            d.year == normalized.year &&
             d.month == normalized.month &&
             d.day == normalized.day);
 
         Color color;
 
         if (!isActive) {
-          color = Colors.grey.shade800; // 🔒 dia não ativo
+          color = Colors.grey.shade800; // bloqueado
         } else if (isCompleted) {
-          color = Colors.green; // ✅ concluído
+          color = Colors.green;
         } else {
-          color = Colors.grey.shade300; // disponível
+          color = Colors.grey.shade300;
         }
 
         return GestureDetector(
