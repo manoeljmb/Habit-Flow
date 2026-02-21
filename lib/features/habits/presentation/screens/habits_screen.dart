@@ -234,6 +234,11 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Future<void> toggleDay(int habitIndex, DateTime date) async {
     final habit = habits[habitIndex];
 
+    // 🔒 BLOQUEIA DIAS NÃO ATIVOS
+    if (!habit.activeWeekdays.contains(date.weekday)) {
+      return;
+    }
+
     final dateOnly = DateTime(date.year, date.month, date.day);
 
     List<DateTime> updatedDates = List.from(habit.completedDates);
