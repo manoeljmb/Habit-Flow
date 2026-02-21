@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
-import 'screens/habits_screen.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:habitflow/core/theme/app_colors.dart';
+import 'package:habitflow/features/habits/presentation/screens/home_screen.dart';
+import 'package:habitflow/features/habits/presentation/screens/habits_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,10 +20,10 @@ class PlannerApp extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData(
         useMaterial3: true,
+        scaffoldBackgroundColor: AppColors.background,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4CAF50),
+          seedColor: AppColors.primary,
         ),
-        scaffoldBackgroundColor: const Color(0xFFF6F8F7),
       ),
       debugShowCheckedModeBanner: false,
       title: 'Planner',

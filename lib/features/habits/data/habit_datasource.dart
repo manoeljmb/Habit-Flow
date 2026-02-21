@@ -1,6 +1,6 @@
 import 'package:hive/hive.dart';
 
-class HabitService {
+class HabitDatasource {
   final Box box = Hive.box('habitsBox');
 
   List<Map> getHabits() {

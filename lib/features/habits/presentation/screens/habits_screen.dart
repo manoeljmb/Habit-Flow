@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../data/habit_datasource.dart';
+import '../../data/habit_repository.dart';
 import '../widgets/habit_week_row.dart';
-import '../services/habit_service.dart';
 
 
 class HabitsScreen extends StatefulWidget {
@@ -16,7 +17,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
     final now = DateTime.now();
     return now.weekday % 7;
   }
-  final HabitService habitService = HabitService();
+  final HabitRepository habitRepository =
+  HabitRepository(HabitDatasource());
   List<Map> habits = [];
   @override
   void initState() {
@@ -97,7 +99,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
               onPressed: () {
                 setState(() {
                   habits.removeAt(habitIndex);
-                  habitService.saveHabits(habits);
+                  habitRepository.saveHabits(habits);
                 });
 
                 Navigator.pop(context);
@@ -142,7 +144,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     "dates": {}
                   });
 
-                  habitService.saveHabits(habits);
+                  habitRepository.saveHabits(habits);
                 });
 
                 Navigator.pop(context);
@@ -156,7 +158,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   void loadHabits() {
-    habits = habitService.getHabits();
+    habits = habitRepository.getHabits();
 
     if (habits.isEmpty) {
       habits = [
@@ -165,7 +167,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           "weekData": [true, false, true, null, true, false, true]
         }
       ];
-      habitService.saveHabits(habits);
+      habitRepository.saveHabits(habits);
     }
 
     setState(() {});
@@ -186,7 +188,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       }
 
       habit["dates"] = dates;
-      habitService.saveHabits(habits);
+      habitRepository.saveHabits(habits);
     });
   }
   void showMonthlyCalendar(BuildContext context, int habitIndex) {

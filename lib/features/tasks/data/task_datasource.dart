@@ -1,6 +1,6 @@
 import 'package:hive/hive.dart';
 
-class TaskService {
+class TaskDatasource {
   final Box box = Hive.box('tasksBox');
 
   List<Map> getTasks() {
