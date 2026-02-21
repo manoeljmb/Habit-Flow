@@ -419,9 +419,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     },
                     child: HabitWeekRow(
                       weekDates: weekDates,
-                      dates: dates,
-                      onTap: (date) =>
-                          toggleDay(habitIndex, date),
+                      dates: habit.completedDates,
+                      activeWeekdays: habit.activeWeekdays,
+                      onTap: (date) => toggleDay(habitIndex, date),
                     ),
                   ),
 
