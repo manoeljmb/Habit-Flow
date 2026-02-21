@@ -21,6 +21,19 @@ class _HomeScreenState extends State<HomeScreen> {
     loadTasks();
   }
 
+  Color getCategoryColor(String category) {
+    switch (category) {
+      case "Work":
+        return Colors.blue;
+      case "Study":
+        return Colors.purple;
+      case "Health":
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
   List<Map> getTasksForSelectedDate() {
     return tasks.where((task) {
       final taskDate = DateTime.parse(task["date"]);
@@ -235,18 +248,76 @@ class _HomeScreenState extends State<HomeScreen> {
                       taskService.saveTasks(tasks);
                     });
                   },
-                  child: ListTile(
-                    onTap: () => showTaskDialog(existingTask: task),
-                    title: Text(task["title"]),
-                    subtitle: Text(task["category"]),
-                    trailing: Checkbox(
-                      value: task["completed"],
-                      onChanged: (value) {
-                        setState(() {
-                          task["completed"] = value;
-                          taskService.saveTasks(tasks);
-                        });
-                      },
+                  child: Card(
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+
+                          // Categoria color dot
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: getCategoryColor(task["category"]),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          // Texto
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  task["title"],
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    decoration: task["completed"]
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  task["category"],
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: getCategoryColor(
+                                        task["category"]),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Checkbox
+                          Transform.scale(
+                            scale: 1.2,
+                            child: Checkbox(
+                              value: task["completed"],
+                              onChanged: (value) {
+                                setState(() {
+                                  task["completed"] = value;
+                                  taskService.saveTasks(tasks);
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
