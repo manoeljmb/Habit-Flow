@@ -11,6 +11,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TaskService taskService = TaskService();
+
+  DateTime selectedDate = DateTime.now();
   List<Map> tasks = [];
 
   @override
@@ -19,15 +21,13 @@ class _HomeScreenState extends State<HomeScreen> {
     loadTasks();
   }
 
-  List<Map> getTodayTasks() {
-    final today = DateTime.now();
-
+  List<Map> getTasksForSelectedDate() {
     return tasks.where((task) {
       final taskDate = DateTime.parse(task["date"]);
 
-      return taskDate.year == today.year &&
-          taskDate.month == today.month &&
-          taskDate.day == today.day;
+      return taskDate.year == selectedDate.year &&
+          taskDate.month == selectedDate.month &&
+          taskDate.day == selectedDate.day;
     }).toList();
   }
 
@@ -142,48 +142,92 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final todayTasks = getTodayTasks();
+    final filteredTasks = getTasksForSelectedDate();
     return Scaffold(
 
       appBar: AppBar(title: const Text("Today")),
-      body: todayTasks.isEmpty
-          ?   const Center(child: Text("Nenhuma tarefa hoje"))
-          : ListView.builder(
-        itemCount: todayTasks.length,
-        itemBuilder: (context, index) {
-          final task = todayTasks[index];
+      body: Column(
+        children: [
 
-          return Dismissible(
-            key: Key(task["id"]),
-            direction: DismissDirection.endToStart,
-            background: Container(
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 20),
-              color: Colors.red,
-              child: const Icon(Icons.delete, color: Colors.white),
-            ),
-            onDismissed: (_) {
-              setState(() {
-                tasks.removeWhere((t) => t["id"] == task["id"]);
-                taskService.saveTasks(tasks);
-              });
-            },
-            child: ListTile(
-              title: Text(task["title"]),
-              subtitle: Text(task["category"]),
-              trailing: Checkbox(
-                value: task["completed"],
-                onChanged: (value) {
-                  setState(() {
-                    task["completed"] = value;
-                    taskService.saveTasks(tasks);
-                  });
-                },
-              ),
-            ),
-          );
-        },
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
 
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () {
+                    setState(() {
+                      selectedDate =
+                          selectedDate.subtract(const Duration(days: 1));
+                    });
+                  },
+                ),
+
+                Text(
+                  "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () {
+                    setState(() {
+                      selectedDate =
+                          selectedDate.add(const Duration(days: 1));
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          Expanded(
+            child: filteredTasks.isEmpty
+                ? const Center(child: Text("Nenhuma tarefa"))
+                : ListView.builder(
+              itemCount: filteredTasks.length,
+              itemBuilder: (context, index) {
+                final task = filteredTasks[index];
+
+                return Dismissible(
+                  key: Key(task["id"]),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    color: Colors.red,
+                    child: const Icon(Icons.delete, color: Colors.white),
+                  ),
+                  onDismissed: (_) {
+                    setState(() {
+                      tasks.removeWhere(
+                              (t) => t["id"] == task["id"]);
+                      taskService.saveTasks(tasks);
+                    });
+                  },
+                  child: ListTile(
+                    title: Text(task["title"]),
+                    subtitle: Text(task["category"]),
+                    trailing: Checkbox(
+                      value: task["completed"],
+                      onChanged: (value) {
+                        setState(() {
+                          task["completed"] = value;
+                          taskService.saveTasks(tasks);
+                        });
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: showAddTaskDialog,
