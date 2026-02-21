@@ -34,37 +34,75 @@ class _HomeScreenState extends State<HomeScreen> {
   void showAddTaskDialog() {
     final titleController = TextEditingController();
     String selectedCategory = "General";
+    DateTime selectedDate = DateTime.now();
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text("Nova Tarefa"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  hintText: "Digite a tarefa",
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: selectedCategory,
-                items: ["General", "Work", "Study", "Health"]
-                    .map(
-                      (category) => DropdownMenuItem(
-                    value: category,
-                    child: Text(category),
+          content: StatefulBuilder(
+            builder: (context, setModalState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      hintText: "Digite a tarefa",
+                    ),
                   ),
-                )
-                    .toList(),
-                onChanged: (value) {
-                  selectedCategory = value!;
-                },
-              ),
-            ],
+
+                  const SizedBox(height: 12),
+
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    items: ["General", "Work", "Study", "Health"]
+                        .map(
+                          (category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      ),
+                    )
+                        .toList(),
+                    onChanged: (value) {
+                      setModalState(() {
+                        selectedCategory = value!;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2100),
+                          );
+
+                          if (picked != null) {
+                            setModalState(() {
+                              selectedDate = picked;
+                            });
+                          }
+                        },
+                        child: const Text("Selecionar Data"),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
           actions: [
             TextButton(
@@ -79,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   "id": DateTime.now().toIso8601String(),
                   "title": titleController.text.trim(),
                   "category": selectedCategory,
-                  "date": DateTime.now().toIso8601String(),
+                  "date": selectedDate.toIso8601String(),
                   "completed": false,
                 };
 
