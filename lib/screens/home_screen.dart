@@ -115,17 +115,33 @@ class _HomeScreenState extends State<HomeScreen> {
         itemBuilder: (context, index) {
           final task = todayTasks[index];
 
-          return ListTile(
-            title: Text(task["title"]),
-            subtitle: Text(task["category"]),
-            trailing: Checkbox(
-              value: task["completed"],
-              onChanged: (value) {
-                setState(() {
-                  task["completed"] = value;
-                  taskService.saveTasks(tasks);
-                });
-              },
+          return Dismissible(
+            key: Key(task["id"]),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              color: Colors.red,
+              child: const Icon(Icons.delete, color: Colors.white),
+            ),
+            onDismissed: (_) {
+              setState(() {
+                tasks.removeWhere((t) => t["id"] == task["id"]);
+                taskService.saveTasks(tasks);
+              });
+            },
+            child: ListTile(
+              title: Text(task["title"]),
+              subtitle: Text(task["category"]),
+              trailing: Checkbox(
+                value: task["completed"],
+                onChanged: (value) {
+                  setState(() {
+                    task["completed"] = value;
+                    taskService.saveTasks(tasks);
+                  });
+                },
+              ),
             ),
           );
         },
