@@ -7,6 +7,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   await Hive.openBox('habitsBox');
+  await Hive.openBox('tasksBox');
   runApp(const PlannerApp());
 }
 
