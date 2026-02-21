@@ -93,7 +93,65 @@ class _HabitsScreenState extends State<HabitsScreen> {
       "best": bestStreak,
     };
   }
+  double calculateMonthlyAccuracy(Habit habit, DateTime month) {
+    int completed = 0;
+    int total = 0;
 
+    final year = month.year;
+    final monthNumber = month.month;
+
+    final daysInMonth = DateTime(year, monthNumber + 1, 0).day;
+
+    for (int day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(year, monthNumber, day);
+
+      final isActive = habit.activeWeekdays.contains(date.weekday);
+      if (!isActive) continue;
+
+      total++;
+
+      final exists = habit.completedDates.any((d) =>
+      d.year == date.year &&
+          d.month == date.month &&
+          d.day == date.day);
+
+      if (exists) {
+        completed++;
+      }
+    }
+
+    if (total == 0) return 0;
+    return (completed / total) * 100;
+  }
+  double calculateYearlyAccuracy(Habit habit, int year) {
+    int completed = 0;
+    int total = 0;
+
+    for (int month = 1; month <= 12; month++) {
+      final daysInMonth = DateTime(year, month + 1, 0).day;
+
+      for (int day = 1; day <= daysInMonth; day++) {
+        final date = DateTime(year, month, day);
+
+        final isActive = habit.activeWeekdays.contains(date.weekday);
+        if (!isActive) continue;
+
+        total++;
+
+        final exists = habit.completedDates.any((d) =>
+        d.year == date.year &&
+            d.month == date.month &&
+            d.day == date.day);
+
+        if (exists) {
+          completed++;
+        }
+      }
+    }
+
+    if (total == 0) return 0;
+    return (completed / total) * 100;
+  }
   void confirmDeleteHabit(int habitIndex) {
     showDialog(
       context: context,
@@ -351,6 +409,11 @@ class _HabitsScreenState extends State<HabitsScreen> {
             final dates = habit.completedDates;
 
             final streakData = calculateStreak(dates);
+            final monthlyAccuracy =
+            calculateMonthlyAccuracy(habit, DateTime.now());
+
+            final yearlyAccuracy =
+            calculateYearlyAccuracy(habit, DateTime.now().year);
             final weekDates = getCurrentWeek();
 
             int completed = 0;
@@ -434,6 +497,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   Text(
                     "Assertividade: ${percentage.toStringAsFixed(0)}%",
                   ),
+                  Text("📅 Mensal: ${monthlyAccuracy.toStringAsFixed(0)}%"),
+                  Text("📆 Anual: ${yearlyAccuracy.toStringAsFixed(0)}%"),
                   const SizedBox(height: 6),
 
                   Text(
