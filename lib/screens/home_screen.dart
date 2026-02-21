@@ -18,6 +18,19 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     loadTasks();
   }
+
+  List<Map> getTodayTasks() {
+    final today = DateTime.now();
+
+    return tasks.where((task) {
+      final taskDate = DateTime.parse(task["date"]);
+
+      return taskDate.year == today.year &&
+          taskDate.month == today.month &&
+          taskDate.day == today.day;
+    }).toList();
+  }
+
   void showAddTaskDialog() {
     final titleController = TextEditingController();
     String selectedCategory = "General";
@@ -91,14 +104,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final todayTasks = getTodayTasks();
     return Scaffold(
+
       appBar: AppBar(title: const Text("Today")),
-      body: tasks.isEmpty
+      body: todayTasks.isEmpty
           ?   const Center(child: Text("Nenhuma tarefa hoje"))
           : ListView.builder(
-        itemCount: tasks.length,
+        itemCount: todayTasks.length,
         itemBuilder: (context, index) {
-          final task = tasks[index];
+          final task = todayTasks[index];
 
           return ListTile(
             title: Text(task["title"]),
@@ -120,6 +135,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: showAddTaskDialog,
         child: const Icon(Icons.add),
       ),
+
     );
+
   }
 }
