@@ -248,11 +248,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-
-                      IconButton(
-                        icon: Icon(Icons.chevron_left,
-                            color: Colors.grey.shade700),
-                        onPressed: () {
+                      _NavButton(
+                        icon: Icons.chevron_left,
+                        onTap: () {
                           setState(() {
                             selectedDate =
                                 selectedDate.subtract(const Duration(days: 1));
@@ -260,23 +258,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
 
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          foregroundColor:
-                          Theme.of(context).colorScheme.primary,
-                        ),
-                        onPressed: () {
+                      _TodayButton(
+                        onTap: () {
                           setState(() {
                             selectedDate = DateTime.now();
                           });
                         },
-                        child: const Text("Hoje"),
                       ),
 
-                      IconButton(
-                        icon: Icon(Icons.chevron_right,
-                            color: Colors.grey.shade700),
-                        onPressed: () {
+                      _NavButton(
+                        icon: Icons.chevron_right,
+                        onTap: () {
                           setState(() {
                             selectedDate =
                                 selectedDate.add(const Duration(days: 1));
@@ -284,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
                     ],
-                  ),
+                  )
                 ],
               ),
             ),
@@ -466,6 +458,69 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+class _NavButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _NavButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Colors.grey.shade300,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: Colors.grey.shade700,
+        ),
+      ),
+    );
+  }
+}
+
+class _TodayButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _TodayButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding:
+        const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          color: Colors.white,
+        ),
+        child: Text(
+          "Hoje",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
       ),
     );
