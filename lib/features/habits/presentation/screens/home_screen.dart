@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import '../widgets/calendar_header.dart';
-import '../../data/habit_repository.dart';
-import '../../data/habit_datasource.dart';
 import '../../../tasks/data/task_repository.dart';
 import '../../../tasks/data/task_datasource.dart';
 import 'package:habitflow/features/habits/domain/habit.dart';
 import 'package:habitflow/features/tasks/domain/task.dart';
+import 'package:habitflow/core/constants/task_categories.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,16 +27,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Color getCategoryColor(String category) {
-    switch (category) {
-      case "Work":
-        return Colors.blue;
-      case "Study":
-        return Colors.purple;
-      case "Health":
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
+    final match = taskCategories
+        .firstWhere(
+          (c) => c.name == category,
+      orElse: () => taskCategories.first,
+    );
+
+    return match.color;
   }
 
   List<Task> getTasksForSelectedDate() {
@@ -82,11 +77,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     value: selectedCategory,
-                    items: ["General", "Work", "Study", "Health"]
+                    items: taskCategories
                         .map(
                           (category) => DropdownMenuItem(
-                        value: category,
-                        child: Text(category),
+                        value: category.name,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              margin: const EdgeInsets.only(right: 8),
+                              decoration: BoxDecoration(
+                                color: category.color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            Text(category.name),
+                          ],
+                        ),
                       ),
                     )
                         .toList(),
