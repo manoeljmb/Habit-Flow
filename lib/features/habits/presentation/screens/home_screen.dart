@@ -4,6 +4,7 @@ import '../../../tasks/data/task_datasource.dart';
 import 'package:habitflow/features/habits/domain/habit.dart';
 import 'package:habitflow/features/tasks/domain/task.dart';
 import 'package:habitflow/core/constants/task_categories.dart';
+import 'package:habitflow/widgets/progress_ring.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -320,11 +321,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 10,
-                        backgroundColor: Colors.grey.shade200,
-                        color: Theme.of(context).colorScheme.primary,
+                      child: ProgressRing(
+                        percentage: progress * 100,
+                        size: 110,
                       ),
                     ),
 
