@@ -359,12 +359,16 @@ class _HabitsScreenState extends State<HabitsScreen> {
             for (final date in weekDates) {
               final normalized = DateTime(date.year, date.month, date.day);
 
+              final isActive = habit.activeWeekdays.contains(date.weekday);
+
+              if (!isActive) continue; // 🔒 ignora dias não ativos
+
+              total++;
+
               final exists = dates.any((d) =>
               d.year == normalized.year &&
                   d.month == normalized.month &&
                   d.day == normalized.day);
-
-              total++;
 
               if (exists) {
                 completed++;
