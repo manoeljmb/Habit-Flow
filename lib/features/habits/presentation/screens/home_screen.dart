@@ -253,15 +253,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                      IconButton(
-                        icon: Icon(
-                          widget.themeController.themeMode == ThemeMode.dark
-                              ? Icons.light_mode
-                              : Icons.dark_mode,
-                        ),
-                        onPressed: () {
-                          widget.themeController.toggleTheme();
-                        },
+                      Row(
+                        children: [
+                          const Icon(Icons.dark_mode, size: 18),
+                          Switch.adaptive(
+                            value: widget.themeController.themeMode == ThemeMode.dark,
+                            onChanged: (value) {
+                              widget.themeController.setTheme(
+                                value ? ThemeMode.dark : ThemeMode.light,
+                              );
+                            },
+                          ),
+                          const Icon(Icons.light_mode, size: 18),
+                        ],
                       ),
                     ],
                   ),
