@@ -521,36 +521,58 @@ class _NavButtonState extends State<_NavButton> {
   }
 }
 
-
-
-
-
-
-
-class _TodayButton extends StatelessWidget {
+class _TodayButton extends StatefulWidget {
   final VoidCallback onTap;
 
   const _TodayButton({required this.onTap});
 
   @override
+  State<_TodayButton> createState() => _TodayButtonState();
+}
+
+class _TodayButtonState extends State<_TodayButton> {
+  bool isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding:
-        const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.primary,
+      onTapDown: (_) => setState(() => isPressed = true),
+      onTapUp: (_) {
+        setState(() => isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => isPressed = false),
+      child: AnimatedScale(
+        scale: isPressed ? 0.94 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 22,
+            vertical: 13,
           ),
-          color: Colors.white,
-        ),
-        child: Text(
-          "Hoje",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.primary,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.primary,
+              width: 1.5,
+            ),
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              )
+            ],
+          ),
+          child: Text(
+            "Hoje",
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
         ),
       ),
