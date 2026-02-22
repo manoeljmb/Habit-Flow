@@ -22,6 +22,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  bool isDatePressed = false;
   final taskRepository =
   TaskRepository(TaskDatasource());
 
@@ -119,13 +120,48 @@ class _HomeScreenState extends State<HomeScreen> {
                     MainAxisAlignment.spaceBetween,
                     children: [
                       GestureDetector(
-                        onTap: () => showPlannerCalendar(context),
-                        child: Text(
-                          "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        onTapDown: (_) => setState(() => isDatePressed = true),
+                        onTapUp: (_) {
+                          setState(() => isDatePressed = false);
+                          showPlannerCalendar(context);
+                        },
+                        onTapCancel: () => setState(() => isDatePressed = false),
+                        child: AnimatedScale(
+                          scale: isDatePressed ? 0.96 : 1.0,
+                          duration: const Duration(milliseconds: 120),
+                          curve: Curves.easeOut,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? const Color(0xFF2C2C2E)
+                                  : Colors.white,
+                              border: Border.all(
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white.withOpacity(0.08)
+                                    : Colors.black.withOpacity(0.06),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
                           ),
                         ),
                       ),
