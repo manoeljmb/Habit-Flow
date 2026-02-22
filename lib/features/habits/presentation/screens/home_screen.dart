@@ -695,29 +695,36 @@ class _NavButtonState extends State<_NavButton> {
         Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF2C2C2E)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
+      onTapDown: (_) => setState(() => isPressed = true),
+      onTapUp: (_) {
+        setState(() => isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => isPressed = false),
+      child: AnimatedScale(
+        scale: isPressed ? 0.92 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
             color: isDark
-                ? Colors.white.withOpacity(0.08)
-                : Colors.black.withOpacity(0.06),
-            width: 1,
+                ? const Color(0xFF2C2C2E)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.black.withOpacity(0.06),
+            ),
           ),
-        ),
-        child: Icon(
-          widget.icon,
-          size: 20,
-          color: isDark
-              ? Colors.white
-              : Colors.black87,
+          child: Icon(
+            widget.icon,
+            size: 20,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
         ),
       ),
     );
@@ -742,30 +749,40 @@ class _TodayButtonState extends State<_TodayButton> {
         Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding:
-        const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF3A3A3C)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withOpacity(0.08)
-                : Colors.black.withOpacity(0.08),
+      onTapDown: (_) => setState(() => isPressed = true),
+      onTapUp: (_) {
+        setState(() => isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => isPressed = false),
+      child: AnimatedScale(
+        scale: isPressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 22,
+            vertical: 12,
           ),
-        ),
-        child: Text(
-          "Today",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
+          decoration: BoxDecoration(
             color: isDark
-                ? Colors.white
-                : Colors.black87,
+                ? const Color(0xFF3A3A3C)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.black.withOpacity(0.08),
+            ),
+          ),
+          child: Text(
+            "Today",
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
           ),
         ),
       ),
