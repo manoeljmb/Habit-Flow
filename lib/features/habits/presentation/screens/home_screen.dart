@@ -118,8 +118,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment:
                     MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
+                      GestureDetector(
+                        onTap: () => showPlannerCalendar(context),
+                        child: Text(
+                          "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                       TextButton(
                         onPressed: () async {
@@ -186,6 +194,121 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  void showPlannerCalendar(BuildContext context) {
+    DateTime tempDate = selectedDate;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final daysInMonth =
+            DateUtils.getDaysInMonth(tempDate.year, tempDate.month);
+
+            return Container(
+              padding: const EdgeInsets.all(20),
+              height: 500,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(30)),
+              ),
+              child: Column(
+                children: [
+
+                  // 🔹 HEADER
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: () {
+                          setModalState(() {
+                            tempDate = DateTime(
+                              tempDate.year,
+                              tempDate.month - 1,
+                            );
+                          });
+                        },
+                      ),
+                      Text(
+                        "${tempDate.month}/${tempDate.year}",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: () {
+                          setModalState(() {
+                            tempDate = DateTime(
+                              tempDate.year,
+                              tempDate.month + 1,
+                            );
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 🔹 GRID
+                  Expanded(
+                    child: GridView.builder(
+                      itemCount: daysInMonth,
+                      gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 7,
+                      ),
+                      itemBuilder: (context, index) {
+                        final day = index + 1;
+                        final date =
+                        DateTime(tempDate.year, tempDate.month, day);
+
+                        final hasTask = tasks.any((task) =>
+                        task.date.year == date.year &&
+                            task.date.month == date.month &&
+                            task.date.day == date.day);
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedDate = date;
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: hasTask
+                                  ? Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withOpacity(0.3)
+                                  : Colors.transparent,
+                            ),
+                            child: Center(
+                              child: Text(day.toString()),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -316,12 +439,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 6),
 
-                  Text(
-                    "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant, // mais suave
+                  GestureDetector(
+                    onTap: () => showPlannerCalendar(context),
+                    child: Text(
+                      "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
 
