@@ -385,64 +385,113 @@ class _HabitsScreenState extends State<HabitsScreen> {
       context: context,
       isScrollControlled: true,
       builder: (context) {
-        final now = DateTime.now();
-        final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
+
+        DateTime now = DateTime.now();
+        int year = now.year;
+        int month = now.month;
+
+        final monthNames = [
+          "January","February","March","April","May","June",
+          "July","August","September","October","November","December"
+        ];
+
+        final habit = habits[habitIndex];
+        final dates = habit.completedDates;
+
+        final daysInMonth = DateUtils.getDaysInMonth(year, month);
+        final firstDay = DateTime(year, month, 1);
+        final startingWeekday = firstDay.weekday % 7; // domingo = 0
+
+        List<Widget> dayWidgets = [];
+
+        // Espaços vazios antes do primeiro dia
+        for (int i = 0; i < startingWeekday; i++) {
+          dayWidgets.add(const SizedBox());
+        }
+
+        // Dias do mês
+        for (int day = 1; day <= daysInMonth; day++) {
+          final date = DateTime(year, month, day);
+
+          final isActive =
+          habit.activeWeekdays.contains(date.weekday);
+
+          final isCompleted = dates.any((d) =>
+          d.year == date.year &&
+              d.month == date.month &&
+              d.day == date.day);
+
+          Color color;
+
+          if (!isActive) {
+            color = Colors.grey.shade800;
+          } else if (isCompleted) {
+            color = Colors.green;
+          } else {
+            color = Colors.red.withOpacity(0.6);
+          }
+
+          dayWidgets.add(
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: color,
+              ),
+              child: Center(
+                child: Text(
+                  day.toString(),
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          );
+        }
 
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           height: 500,
           child: Column(
             children: [
-              Text(
-                "${now.month}/${now.year}",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: GridView.builder(
-                  itemCount: daysInMonth,
-                  gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 7,
+
+              // HEADER
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Icon(Icons.chevron_left),
+                  Text(
+                    "${monthNames[month - 1]} $year",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  itemBuilder: (context, index) {
-                    final dayNumber = index + 1;
-                    final date = DateTime(now.year, now.month, dayNumber);
-                    final key = date.toIso8601String().split("T").first;
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
 
-                    final habit = habits[habitIndex];
+              const SizedBox(height: 16),
 
-                    final dates = habit.completedDates;
-                    final dateOnly = DateTime.parse(key);
+              // DIAS DA SEMANA
+              const Row(
+                children: [
+                  Expanded(child: Center(child: Text("Su"))),
+                  Expanded(child: Center(child: Text("Mo"))),
+                  Expanded(child: Center(child: Text("Tu"))),
+                  Expanded(child: Center(child: Text("We"))),
+                  Expanded(child: Center(child: Text("Th"))),
+                  Expanded(child: Center(child: Text("Fr"))),
+                  Expanded(child: Center(child: Text("Sa"))),
+                ],
+              ),
 
-                    final status = dates.any((d) =>
-                    d.year == dateOnly.year &&
-                        d.month == dateOnly.month &&
-                        d.day == dateOnly.day);
+              const SizedBox(height: 12),
 
-                    Color color;
-                    if (status == true) {
-                      color = Colors.green;
-                    } else if (status == false) {
-                      color = Colors.grey.shade300;
-                    } else {
-                      color = Colors.grey.shade700;
-                    }
-
-                    return Container(
-                      margin: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
-                        color: color,
-                      ),
-                      child: Center(
-                        child: Text(dayNumber.toString()),
-                      ),
-                    );
-                  },
+              Expanded(
+                child: GridView.count(
+                  crossAxisCount: 7,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  children: dayWidgets,
                 ),
               ),
             ],
