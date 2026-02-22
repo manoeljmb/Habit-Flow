@@ -494,13 +494,52 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
                   const SizedBox(height: 12),
 
-                  Text(
-                    "Assertividade: ${percentage.toStringAsFixed(0)}%",
-                  ),
-                  Text("📅 Mensal: ${monthlyAccuracy.toStringAsFixed(0)}%"),
-                  Text("📆 Anual: ${yearlyAccuracy.toStringAsFixed(0)}%"),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 12),
 
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+
+                      // 🔥 Indicador principal (sem texto "Assertividade")
+                      Row(
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            "${percentage.toStringAsFixed(0)}%",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // 📅 Calendário (abre modal mensal)
+                      IconButton(
+                        icon: const Icon(Icons.calendar_month_outlined),
+                        onPressed: () {
+                          showMonthlyCalendar(context, habitIndex);
+                        },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+// 🔥 Streak continua abaixo
                   Text(
                     "🔥 Atual: ${streakData["current"]} dias | 🏆 Melhor: ${streakData["best"]} dias",
                   ),
