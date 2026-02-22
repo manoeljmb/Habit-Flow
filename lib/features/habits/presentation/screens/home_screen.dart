@@ -225,10 +225,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
 
                   Text(
-                    "Today",
+                    "HabitFlow",
                     style: TextStyle(
-                      fontSize: 34,
+                      fontSize: 30,
                       fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
                       color: Colors.grey.shade900,
                     ),
                   ),
@@ -239,7 +240,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
                     style: TextStyle(
                       fontSize: 15,
-                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade500, // mais suave
                     ),
                   ),
 
@@ -463,7 +465,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-class _NavButton extends StatelessWidget {
+class _NavButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback onTap;
 
@@ -473,28 +475,57 @@ class _NavButton extends StatelessWidget {
   });
 
   @override
+  State<_NavButton> createState() => _NavButtonState();
+}
+
+class _NavButtonState extends State<_NavButton> {
+  bool isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.grey.shade300,
+      onTapDown: (_) => setState(() => isPressed = true),
+      onTapUp: (_) {
+        setState(() => isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => isPressed = false),
+      child: AnimatedScale(
+        scale: isPressed ? 0.92 : 1,
+        duration: const Duration(milliseconds: 120),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.grey.shade300,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              )
+            ],
           ),
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.white,
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: Colors.grey.shade700,
+          child: Icon(
+            widget.icon,
+            size: 20,
+            color: Colors.grey.shade700,
+          ),
         ),
       ),
     );
   }
 }
+
+
+
+
+
+
 
 class _TodayButton extends StatelessWidget {
   final VoidCallback onTap;
