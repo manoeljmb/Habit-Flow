@@ -386,116 +386,136 @@ class _HabitsScreenState extends State<HabitsScreen> {
       isScrollControlled: true,
       builder: (context) {
 
-        DateTime now = DateTime.now();
-        int year = now.year;
-        int month = now.month;
+        return StatefulBuilder(
+          builder: (context, setModalState) {
 
-        final monthNames = [
-          "January","February","March","April","May","June",
-          "July","August","September","October","November","December"
-        ];
+            DateTime current = DateTime.now();
 
-        final habit = habits[habitIndex];
-        final dates = habit.completedDates;
+            int year = current.year;
+            int month = current.month;
 
-        final daysInMonth = DateUtils.getDaysInMonth(year, month);
-        final firstDay = DateTime(year, month, 1);
-        final startingWeekday = firstDay.weekday % 7; // domingo = 0
+            final monthNames = [
+              "January","February","March","April","May","June",
+              "July","August","September","October","November","December"
+            ];
 
-        List<Widget> dayWidgets = [];
+            final habit = habits[habitIndex];
+            final dates = habit.completedDates;
 
-        // Espaços vazios antes do primeiro dia
-        for (int i = 0; i < startingWeekday; i++) {
-          dayWidgets.add(const SizedBox());
-        }
+            final daysInMonth = DateUtils.getDaysInMonth(year, month);
+            final firstDay = DateTime(year, month, 1);
+            final startingWeekday = firstDay.weekday % 7;
 
-        // Dias do mês
-        for (int day = 1; day <= daysInMonth; day++) {
-          final date = DateTime(year, month, day);
+            List<Widget> dayWidgets = [];
 
-          final isActive =
-          habit.activeWeekdays.contains(date.weekday);
+            for (int i = 0; i < startingWeekday; i++) {
+              dayWidgets.add(const SizedBox());
+            }
 
-          final isCompleted = dates.any((d) =>
-          d.year == date.year &&
-              d.month == date.month &&
-              d.day == date.day);
+            for (int day = 1; day <= daysInMonth; day++) {
+              final date = DateTime(year, month, day);
 
-          Color color;
+              final isActive =
+              habit.activeWeekdays.contains(date.weekday);
 
-          if (!isActive) {
-            color = Colors.grey.shade800;
-          } else if (isCompleted) {
-            color = Colors.green;
-          } else {
-            color = Colors.red.withOpacity(0.6);
-          }
+              final isCompleted = dates.any((d) =>
+              d.year == date.year &&
+                  d.month == date.month &&
+                  d.day == date.day);
 
-          dayWidgets.add(
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: color,
-              ),
-              child: Center(
-                child: Text(
-                  day.toString(),
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
-          );
-        }
+              Color color;
 
-        return Container(
-          padding: const EdgeInsets.all(20),
-          height: 500,
-          child: Column(
-            children: [
+              if (!isActive) {
+                color = Colors.grey.shade800;
+              } else if (isCompleted) {
+                color = Colors.green;
+              } else {
+                color = Colors.red.withOpacity(0.6);
+              }
 
-              // HEADER
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Icon(Icons.chevron_left),
-                  Text(
-                    "${monthNames[month - 1]} $year",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+              dayWidgets.add(
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: color,
+                  ),
+                  child: Center(
+                    child: Text(
+                      day.toString(),
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
-                  const Icon(Icons.chevron_right),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // DIAS DA SEMANA
-              const Row(
-                children: [
-                  Expanded(child: Center(child: Text("Su"))),
-                  Expanded(child: Center(child: Text("Mo"))),
-                  Expanded(child: Center(child: Text("Tu"))),
-                  Expanded(child: Center(child: Text("We"))),
-                  Expanded(child: Center(child: Text("Th"))),
-                  Expanded(child: Center(child: Text("Fr"))),
-                  Expanded(child: Center(child: Text("Sa"))),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 7,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  children: dayWidgets,
                 ),
+              );
+            }
+
+            return Container(
+              padding: const EdgeInsets.all(20),
+              height: 500,
+              child: Column(
+                children: [
+
+                  // HEADER COM NAVEGAÇÃO
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: () {
+                          setModalState(() {
+                            current = DateTime(year, month - 1);
+                          });
+                        },
+                      ),
+
+                      Text(
+                        "${monthNames[month - 1]} $year",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: () {
+                          setModalState(() {
+                            current = DateTime(year, month + 1);
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  const Row(
+                    children: [
+                      Expanded(child: Center(child: Text("Su"))),
+                      Expanded(child: Center(child: Text("Mo"))),
+                      Expanded(child: Center(child: Text("Tu"))),
+                      Expanded(child: Center(child: Text("We"))),
+                      Expanded(child: Center(child: Text("Th"))),
+                      Expanded(child: Center(child: Text("Fr"))),
+                      Expanded(child: Center(child: Text("Sa"))),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Expanded(
+                    child: GridView.count(
+                      crossAxisCount: 7,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      children: dayWidgets,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
