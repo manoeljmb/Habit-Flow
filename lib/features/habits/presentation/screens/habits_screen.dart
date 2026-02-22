@@ -158,12 +158,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Excluir Hábito"),
-          content: const Text("Tem certeza que deseja excluir este hábito?"),
+          title: const Text("Delete Habit"),
+          content: const Text("Are you sure you want to break this habit?"),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancelar"),
+              child: const Text("Cancel"),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -177,7 +177,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
               ),
-              child: const Text("Excluir"),
+              child: const Text("Delete"),
             ),
           ],
         );
@@ -194,7 +194,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Novo Hábito"),
+          title: const Text("New Habit"),
           content: StatefulBuilder(
             builder: (context, setModalState) {
               return Column(
@@ -203,7 +203,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   TextField(
                     controller: controller,
                     decoration: const InputDecoration(
-                      hintText: "Digite o nome do hábito",
+                      hintText: "Enter the name of the habit.",
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -239,7 +239,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "Dias da semana",
+                      "Days of the week",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -254,7 +254,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
                       return ChoiceChip(
                         label: Text(
-                          ["S", "T", "Q", "Q", "S", "S", "D"][index],
+                          ["S", "M", "T", "W", "T", "F", "S"][index],
                         ),
                         selected: isSelected,
                         onSelected: (_) {
@@ -276,7 +276,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancelar"),
+              child: const Text("Cancel"),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -295,7 +295,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
                 Navigator.pop(context);
               },
-              child: const Text("Criar"),
+              child: const Text("Create"),
             ),
           ],
         );
@@ -309,7 +309,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     if (habits.isEmpty) {
       final defaultHabit = Habit(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: "Não beber",
+        title: "Don't Drink",
         completedDates: [],
         activeWeekdays: [1,2,3,4,5,6,7],
         category: "Health", // 🔥 ADICIONE ISSO
@@ -324,7 +324,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Future<void> toggleDay(int habitIndex, DateTime date) async {
     final habit = habits[habitIndex];
 
-    // 🔒 BLOQUEIA DIAS NÃO ATIVOS
+    // 🔒 BLOCK INACTIVE DAYS
     if (!habit.activeWeekdays.contains(date.weekday)) {
       return;
     }
@@ -382,7 +382,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
   void showMonthlyCalendar(BuildContext context, int habitIndex) {
 
-    DateTime current = DateTime.now(); // 👈 AGORA FICA AQUI FORA
+    DateTime current = DateTime.now();
 
     showModalBottomSheet(
       context: context,
@@ -551,7 +551,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
               final isActive = habit.activeWeekdays.contains(date.weekday);
 
-              if (!isActive) continue; // 🔒 ignora dias não ativos
+              if (!isActive) continue; // 🔒 Ignore inactive days.
 
               total++;
 
@@ -636,7 +636,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
 
-                      // 🔥 Indicador principal (sem texto "Assertividade")
+                      // 🔥 Main indicator (without "Assertiveness" text)
                       Row(
                         children: [
                           Container(
@@ -663,7 +663,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                         ],
                       ),
 
-                      // 📅 Calendário (abre modal mensal)
+                      // 📅 Calendar (opens monthly modal)
                       IconButton(
                         icon: const Icon(Icons.calendar_month_outlined),
                         onPressed: () {
@@ -675,9 +675,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
                   const SizedBox(height: 8),
 
-// 🔥 Streak continua abaixo
                   Text(
-                    "🔥 Atual: ${streakData["current"]} dias | 🏆 Melhor: ${streakData["best"]} dias",
+                    "🔥 Current: ${streakData["current"]} days | 🏆 Best: ${streakData["best"]} days",
                   ),
                 ],
               ),

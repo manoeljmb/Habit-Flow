@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) {
         return AlertDialog(
           title: Text(
-            existingTask == null ? "Nova Tarefa" : "Editar Tarefa",
+            existingTask == null ? "New Task" : "Edit Task",
           ),
           content: StatefulBuilder(
             builder: (context, setModalState) {
@@ -80,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   TextField(
                     controller: titleController,
                     decoration: const InputDecoration(
-                      hintText: "Digite a tarefa",
+                      hintText: "Type the task",
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -138,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                         },
                         child:
-                        const Text("Selecionar Data"),
+                        const Text("Select date"),
                       ),
                     ],
                   ),
@@ -150,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
             TextButton(
               onPressed: () =>
                   Navigator.pop(context),
-              child: const Text("Cancelar"),
+              child: const Text("Cancel"),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -181,8 +181,8 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               child: Text(
                 existingTask == null
-                    ? "Criar"
-                    : "Salvar",
+                    ? "Create"
+                    : "Save",
               ),
             ),
           ],
@@ -256,13 +256,57 @@ class _HomeScreenState extends State<HomeScreen> {
                       Row(
                         children: [
                           const Icon(Icons.dark_mode, size: 18),
-                          Switch.adaptive(
-                            value: widget.themeController.themeMode == ThemeMode.dark,
-                            onChanged: (value) {
+                          GestureDetector(
+                            onTap: () {
+                              final isDark =
+                                  widget.themeController.themeMode == ThemeMode.dark;
+
                               widget.themeController.setTheme(
-                                value ? ThemeMode.dark : ThemeMode.light,
+                                isDark ? ThemeMode.light : ThemeMode.dark,
                               );
                             },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 400),
+                              curve: Curves.easeInOutCubic,
+                              width: 64,
+                              height: 34,
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(30),
+                                color: widget.themeController.themeMode == ThemeMode.dark
+                                    ? const Color(0xFF1E1E1E)
+                                    : const Color(0xFF6FCF97),
+                                border: Border.all(
+                                  color: widget.themeController.themeMode == ThemeMode.dark
+                                      ? Colors.grey.shade700
+                                      : Colors.transparent,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: AnimatedAlign(
+                                duration: const Duration(milliseconds: 400),
+                                curve: Curves.easeInOutCubic,
+                                alignment:
+                                widget.themeController.themeMode == ThemeMode.dark
+                                    ? Alignment.centerLeft
+                                    : Alignment.centerRight,
+                                child: Container(
+                                  width: 26,
+                                  height: 26,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                           const Icon(Icons.light_mode, size: 18),
                         ],
@@ -494,38 +538,33 @@ class _NavButtonState extends State<_NavButton> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
-      onTapDown: (_) => setState(() => isPressed = true),
-      onTapUp: (_) {
-        setState(() => isPressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => isPressed = false),
-      child: AnimatedScale(
-        scale: isPressed ? 0.92 : 1,
-        duration: const Duration(milliseconds: 120),
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Colors.grey.shade300,
-            ),
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              )
-            ],
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFF2C2C2E)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withOpacity(0.08)
+                : Colors.black.withOpacity(0.06),
+            width: 1,
           ),
-          child: Icon(
-            widget.icon,
-            size: 20,
-            color: Colors.grey.shade700,
-          ),
+        ),
+        child: Icon(
+          widget.icon,
+          size: 20,
+          color: isDark
+              ? Colors.white
+              : Colors.black87,
         ),
       ),
     );
@@ -546,44 +585,34 @@ class _TodayButtonState extends State<_TodayButton> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
-      onTapDown: (_) => setState(() => isPressed = true),
-      onTapUp: (_) {
-        setState(() => isPressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => isPressed = false),
-      child: AnimatedScale(
-        scale: isPressed ? 0.94 : 1,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 22,
-            vertical: 13,
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding:
+        const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFF3A3A3C)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withOpacity(0.08)
+                : Colors.black.withOpacity(0.08),
           ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary,
-              width: 1.5,
-            ),
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              )
-            ],
-          ),
-          child: Text(
-            "Hoje",
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+        ),
+        child: Text(
+          "Today",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: isDark
+                ? Colors.white
+                : Colors.black87,
           ),
         ),
       ),
