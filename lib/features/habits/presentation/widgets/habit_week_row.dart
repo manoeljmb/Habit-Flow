@@ -39,14 +39,42 @@ class HabitWeekRow extends StatelessWidget {
           color = Colors.grey.shade300;
         }
 
-        return GestureDetector(
-          onTap: isActive ? () => onTap(date) : null,
-          child: Container(
-            width: 35,
-            height: 35,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(8),
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: isActive ? () => onTap(date) : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: isCompleted
+                    ? [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+                    : [],
+              ),
+              child: Center(
+                child: Text(
+                  date.day.toString(),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: !isActive
+                        ? Colors.grey.shade400
+                        : isCompleted
+                        ? Colors.white
+                        : Colors.grey.shade800,
+                  ),
+                ),
+              ),
             ),
           ),
         );
