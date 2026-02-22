@@ -21,13 +21,14 @@ class HabitAdapter extends TypeAdapter<Habit> {
       title: fields[1] as String,
       completedDates: (fields[2] as List).cast<DateTime>(),
       activeWeekdays: (fields[3] as List).cast<int>(),
+      category: fields[4] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, Habit obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class HabitAdapter extends TypeAdapter<Habit> {
       ..writeByte(2)
       ..write(obj.completedDates)
       ..writeByte(3)
-      ..write(obj.activeWeekdays);
+      ..write(obj.activeWeekdays)
+      ..writeByte(4)
+      ..write(obj.category);
   }
 
   @override

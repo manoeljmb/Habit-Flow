@@ -16,11 +16,15 @@ class Habit extends HiveObject {
   @HiveField(3)
   final List<int> activeWeekdays;
 
+  @HiveField(4)
+  final String category;
+
   Habit({
     required this.id,
     required this.title,
     required this.completedDates,
     required this.activeWeekdays,
+    required this.category
   });
 
   Habit copyWith({
@@ -28,12 +32,14 @@ class Habit extends HiveObject {
     String? title,
     List<DateTime>? completedDates,
     List<int>? activeWeekdays,
+    String? category,
   }) {
     return Habit(
       id: id ?? this.id,
       title: title ?? this.title,
       completedDates: completedDates ?? this.completedDates,
       activeWeekdays: activeWeekdays ?? this.activeWeekdays,
+      category: category ?? this.category,
     );
   }
 }

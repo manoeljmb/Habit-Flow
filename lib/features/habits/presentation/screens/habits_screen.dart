@@ -187,6 +187,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   void showAddHabitDialog() {
     final TextEditingController controller = TextEditingController();
     List<int> selectedDays = [1, 2, 3, 4, 5, 6, 7];
+    String selectedCategory = "Health";
 
     showDialog(
       context: context,
@@ -204,6 +205,34 @@ class _HabitsScreenState extends State<HabitsScreen> {
                       hintText: "Digite o nome do hábito",
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    items: [
+                      "Health",
+                      "Fitness",
+                      "Study",
+                      "Work",
+                      "Spiritual",
+                      "Reading",
+                      "Productivity",
+                      "Finance",
+                      "Mindset",
+                      "Diet",
+                    ].map(
+                          (category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      ),
+                    ).toList(),
+                    onChanged: (value) {
+                      setModalState(() {
+                        selectedCategory = value!;
+                      });
+                    },
+                  ),
+
                   const SizedBox(height: 16),
 
                   const Align(
@@ -257,6 +286,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   title: controller.text.trim(),
                   completedDates: [],
                   activeWeekdays: selectedDays,
+                  category: selectedCategory,
                 );
 
                 await habitRepository.addHabit(newHabit);
@@ -280,7 +310,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: "Não beber",
         completedDates: [],
-        activeWeekdays: [1, 2, 3, 4, 5, 6, 7], // todos os dias
+        activeWeekdays: [1,2,3,4,5,6,7],
+        category: "Health", // 🔥 ADICIONE ISSO
       );
 
       await habitRepository.addHabit(defaultHabit);
