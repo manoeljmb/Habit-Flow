@@ -13,6 +13,7 @@ class _PulsingFABState extends State<PulsingFAB>
     with SingleTickerProviderStateMixin {
 
   late AnimationController _controller;
+  bool isPressed = false;
 
   @override
   void initState() {
@@ -40,30 +41,42 @@ class _PulsingFABState extends State<PulsingFAB>
       animation: _controller,
       builder: (context, child) {
 
-        final scale = 1 + (_controller.value * 0.08);
+        final scalePulse = 1 + (_controller.value * 0.08);
         final glow = 10 + (_controller.value * 25);
 
+        final pressScale = isPressed ? 0.92 : 1.0;
+
         return Transform.scale(
-          scale: scale,
+          scale: scalePulse * pressScale,
           child: Material(
             color: Colors.transparent,
-            child: Container(
-              height: 64,
-              width: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: green,
-                boxShadow: [
-                  BoxShadow(
-                    color: green.withOpacity(0.6),
-                    blurRadius: glow,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(32),
-                onTap: widget.onTap,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(32),
+
+              onTapDown: (_) => setState(() => isPressed = true),
+
+              onTapUp: (_) {
+                setState(() => isPressed = false);
+                widget.onTap();
+              },
+
+              onTapCancel: () => setState(() => isPressed = false),
+
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                height: 64,
+                width: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: green,
+                  boxShadow: [
+                    BoxShadow(
+                      color: green.withOpacity(0.6),
+                      blurRadius: glow,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
                 child: const Center(
                   child: Icon(
                     Icons.add,
