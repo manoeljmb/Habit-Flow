@@ -17,7 +17,6 @@ class HabitWeekRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(7, (index) {
         final date = weekDates[index];
         final normalized = DateTime(date.year, date.month, date.day);
@@ -39,39 +38,43 @@ class HabitWeekRow extends StatelessWidget {
           color = Colors.grey.shade300;
         }
 
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: isActive ? () => onTap(date) : null,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: color,
+        return Expanded(
+          child: Center(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: isCompleted
-                    ? [
-                  BoxShadow(
-                    color: Colors.green.withOpacity(0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+                onTap: isActive ? () => onTap(date) : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: isCompleted
+                        ? [
+                      BoxShadow(
+                        color: Colors.green.withOpacity(0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                        : [],
                   ),
-                ]
-                    : [],
-              ),
-              child: Center(
-                child: Text(
-                  date.day.toString(),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: !isActive
-                        ? Colors.grey.shade400
-                        : isCompleted
-                        ? Colors.white
-                        : Colors.grey.shade800,
+                  child: Center(
+                    child: Text(
+                      date.day.toString(),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: !isActive
+                            ? Colors.grey.shade400
+                            : isCompleted
+                            ? Colors.white
+                            : Colors.grey.shade800,
+                      ),
+                    ),
                   ),
                 ),
               ),

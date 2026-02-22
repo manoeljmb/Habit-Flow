@@ -534,15 +534,14 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   const SizedBox(height: 12),
 
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: const [
-                      Text("Sun"),
-                      Text("Mon"),
-                      Text("Tue"),
-                      Text("Wed"),
-                      Text("Thu"),
-                      Text("Fri"),
-                      Text("Sat"),
+                      Expanded(child: Center(child: Text("Sun"))),
+                      Expanded(child: Center(child: Text("Mon"))),
+                      Expanded(child: Center(child: Text("Tue"))),
+                      Expanded(child: Center(child: Text("Wed"))),
+                      Expanded(child: Center(child: Text("Thu"))),
+                      Expanded(child: Center(child: Text("Fri"))),
+                      Expanded(child: Center(child: Text("Sat"))),
                     ],
                   ),
 
