@@ -381,6 +381,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }
   }
   void showMonthlyCalendar(BuildContext context, int habitIndex) {
+
+    DateTime current = DateTime.now(); // 👈 AGORA FICA AQUI FORA
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -388,8 +391,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
         return StatefulBuilder(
           builder: (context, setModalState) {
-
-            DateTime current = DateTime.now();
 
             int year = current.year;
             int month = current.month;
@@ -455,7 +456,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
               child: Column(
                 children: [
 
-                  // HEADER COM NAVEGAÇÃO
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
