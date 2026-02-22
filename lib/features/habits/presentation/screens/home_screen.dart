@@ -6,7 +6,7 @@ import 'package:habitflow/features/tasks/domain/task.dart';
 import 'package:habitflow/core/constants/task_categories.dart';
 import 'package:habitflow/widgets/progress_ring.dart';
 import '/../widgets/pulsing_fab.dart';
-
+import 'package:intl/intl.dart';
 import 'package:habitflow/core/theme/theme_controller.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -216,9 +216,16 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(20),
               height: 500,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF2C2C2E)
+                    : Colors.white,
                 borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(30)),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.black.withOpacity(0.05),
+                ),
               ),
               child: Column(
                 children: [
@@ -239,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
                       Text(
-                        "${tempDate.month}/${tempDate.year}",
+                        DateFormat('MMMM yyyy').format(tempDate),
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -441,12 +448,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   GestureDetector(
                     onTap: () => showPlannerCalendar(context),
-                    child: Text(
-                      "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF2C2C2E)
+                            : const Color(0xFFF2F2F7),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ),
                   ),
