@@ -7,8 +7,15 @@ import 'package:habitflow/core/constants/task_categories.dart';
 import 'package:habitflow/widgets/progress_ring.dart';
 import '/../widgets/pulsing_fab.dart';
 
+import 'package:habitflow/core/theme/theme_controller.dart';
+
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ThemeController themeController;
+
+  const HomeScreen({
+    super.key,
+    required this.themeController,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -207,13 +214,18 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: () => showTaskDialog(),
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.topCenter,
-            radius: 1.2,
-            colors: [
-              Color(0xFFE3F2ED),
-              Color(0xFFF4F7F6),
+            radius: 1.3,
+            colors: Theme.of(context).brightness == Brightness.dark
+                ? [
+              const Color(0xFF1A1F2C),
+              const Color(0xFF0F1320),
+            ]
+                : [
+              const Color(0xFFE3F2ED),
+              const Color(0xFFF4F7F6),
             ],
           ),
         ),
@@ -227,14 +239,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
-                  Text(
-                    "Today",
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+
+                      Text(
+                        "Today",
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+
+                      IconButton(
+                        icon: Icon(
+                          widget.themeController.themeMode == ThemeMode.dark
+                              ? Icons.light_mode
+                              : Icons.dark_mode,
+                        ),
+                        onPressed: () {
+                          widget.themeController.toggleTheme();
+                        },
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 6),
