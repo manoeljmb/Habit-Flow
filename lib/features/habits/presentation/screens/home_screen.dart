@@ -233,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontSize: 30,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,
-                      color: Colors.grey.shade900,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
 
@@ -244,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade500, // mais suave
+                      color: Theme.of(context).colorScheme.onSurfaceVariant, // mais suave
                     ),
                   ),
 
@@ -329,7 +329,10 @@ class _HomeScreenState extends State<HomeScreen> {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
+        child: Icon(
+          Icons.delete,
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
       ),
       onDismissed: (_) async {
         await taskRepository.deleteTask(task.id);

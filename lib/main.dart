@@ -26,16 +26,28 @@ class PlannerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: AppColors.background,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-        ),
-      ),
       debugShowCheckedModeBanner: false,
-      title: 'Planner',
-      home: const MainNavigation(),
+
+      themeMode: ThemeMode.system, // usa sistema
+
+      theme: ThemeData(
+        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6FCF97),
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+      ),
+
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6FCF97),
+          brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: const Color(0xFF0F1320),
+        useMaterial3: true,
+      ),
     );
   }
 }
