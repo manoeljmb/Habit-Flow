@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../widgets/pulsing_fab.dart';
 import '../../data/habit_datasource.dart';
 import '../../data/habit_repository.dart';
 import '../widgets/habit_week_row.dart';
@@ -353,6 +354,32 @@ class _HabitsScreenState extends State<HabitsScreen> {
     await habitRepository.addHabit(updatedHabit);
     loadHabits();
   }
+  Color getHabitCategoryColor(String category) {
+    switch (category) {
+      case "Health":
+        return Colors.green;
+      case "Fitness":
+        return Colors.teal;
+      case "Study":
+        return Colors.purple;
+      case "Work":
+        return Colors.blue;
+      case "Finance":
+        return Colors.orange;
+      case "Spiritual":
+        return Colors.brown;
+      case "Reading":
+        return Colors.indigo;
+      case "Productivity":
+        return Colors.cyan;
+      case "Mindset":
+        return Colors.lime;
+      case "Diet":
+        return Colors.redAccent;
+      default:
+        return Colors.grey;
+    }
+  }
   void showMonthlyCalendar(BuildContext context, int habitIndex) {
     showModalBottomSheet(
       context: context,
@@ -472,8 +499,18 @@ class _HabitsScreenState extends State<HabitsScreen> {
             final percentage = total == 0 ? 0 : (completed / total) * 100;
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 32),
-              child: Column(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: getHabitCategoryColor(habit.category).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: getHabitCategoryColor(habit.category).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
@@ -576,13 +613,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   ),
                 ],
               ),
+            ),
             );
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: showAddHabitDialog,
-        child: const Icon(Icons.add),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
+      floatingActionButton: PulsingFAB(
+        onTap: showAddHabitDialog,
       ),
     );
   }

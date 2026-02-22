@@ -5,6 +5,7 @@ import 'package:habitflow/features/habits/domain/habit.dart';
 import 'package:habitflow/features/tasks/domain/task.dart';
 import 'package:habitflow/core/constants/task_categories.dart';
 import 'package:habitflow/widgets/progress_ring.dart';
+import '/../widgets/pulsing_fab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -199,11 +200,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => showTaskDialog(),
-        child: const Icon(Icons.add),
+      resizeToAvoidBottomInset: false,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
+      floatingActionButton: PulsingFAB(
+        onTap: () => showTaskDialog(),
       ),
-      body: Container(
+      body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.topCenter,
@@ -225,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
 
                   Text(
-                    "HabitFlow",
+                    "Today",
                     style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w700,
@@ -282,91 +285,40 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-
-            // 🔹 PROGRESS CARD
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-
-                    const Text(
-                      "Progresso do dia",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: ProgressRing(
-                        percentage: progress * 100,
-                        size: 110,
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    Text(
-                      "${(progress * 100).toInt()}% concluído",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
+      // 🔹 LISTA
+      Expanded(
+        child: filteredTasks.isEmpty
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.task_alt,
+                size: 60,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Nenhuma tarefa para este dia",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade600,
                 ),
               ),
-            ),
-
-            // 🔹 LISTA
-            Expanded(
-              child: filteredTasks.isEmpty
-                  ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.task_alt,
-                        size: 60, color: Colors.grey.shade400),
-                    const SizedBox(height: 12),
-                    Text(
-                      "Nenhuma tarefa para este dia",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-                  : ListView.builder(
-                itemCount: filteredTasks.length,
-                itemBuilder: (context, index) {
-                  final task = filteredTasks[index];
-
-                  return buildPremiumTaskCard(task);
-                },
-              ),
-            ),
-          ],
+            ],
+          ),
+        )
+            : ListView.builder(
+          itemCount: filteredTasks.length,
+          itemBuilder: (context, index) {
+            final task = filteredTasks[index];
+            return buildPremiumTaskCard(task);
+          },
         ),
       ),
+    ],
+      ),
+    ),
     );
   }
   Widget buildPremiumTaskCard(Task task) {
@@ -387,13 +339,17 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: getCategoryColor(task.category).withOpacity(0.08),
           borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: getCategoryColor(task.category).withOpacity(0.3),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 30,
-              offset: const Offset(0, 15),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
@@ -465,6 +421,25 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+Color getTaskCategoryColor(String category) {
+  switch (category) {
+    case "General":
+      return Colors.grey;
+    case "Health":
+      return Colors.green;
+    case "Coding":
+      return Colors.blue;
+    case "Social":
+      return Colors.teal;
+    case "Study":
+      return Colors.purple;
+    case "Work":
+      return Colors.indigo;
+    default:
+      return Colors.grey;
+  }
+}
+
 class _NavButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback onTap;
