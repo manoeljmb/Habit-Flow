@@ -306,18 +306,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Future<void> loadHabits() async {
     habits = habitRepository.getHabits();
 
-    if (habits.isEmpty) {
-      final defaultHabit = Habit(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: "Don't Drink",
-        completedDates: [],
-        activeWeekdays: [1,2,3,4,5,6,7],
-        category: "Health", // 🔥 ADICIONE ISSO
-      );
 
-      await habitRepository.addHabit(defaultHabit);
-      habits = habitRepository.getHabits();
-    }
 
     setState(() {});
   }
@@ -528,11 +517,33 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: ListView.builder(
+        child: habits.isEmpty
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.repeat,
+                size: 60,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "No habits yet",
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: showAddHabitDialog,
+                child: const Text("Create your first habit"),
+              ),
+            ],
+          ),
+        )
+            : ListView.builder(
           itemCount: habits.length,
           itemBuilder: (context, habitIndex) {
             final habit = habits[habitIndex];
-
             final dates = habit.completedDates;
 
             final streakData = calculateStreak(dates);
@@ -541,6 +552,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
             final yearlyAccuracy =
             calculateYearlyAccuracy(habit, DateTime.now().year);
+
             final weekDates = getCurrentWeek();
 
             int completed = 0;
@@ -548,10 +560,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
             for (final date in weekDates) {
               final normalized = DateTime(date.year, date.month, date.day);
+              final isActive =
+              habit.activeWeekdays.contains(date.weekday);
 
-              final isActive = habit.activeWeekdays.contains(date.weekday);
-
-              if (!isActive) continue; // 🔒 Ignore inactive days.
+              if (!isActive) continue;
 
               total++;
 
@@ -560,30 +572,30 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   d.month == normalized.month &&
                   d.day == normalized.day);
 
-              if (exists) {
-                completed++;
-              }
+              if (exists) completed++;
             }
 
-            final percentage = total == 0 ? 0 : (completed / total) * 100;
+            final percentage =
+            total == 0 ? 0 : (completed / total) * 100;
 
             return Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: getHabitCategoryColor(habit.category).withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: getHabitCategoryColor(habit.category).withOpacity(0.3),
-                      width: 1,
-                    ),
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: getHabitCategoryColor(habit.category)
+                      .withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: getHabitCategoryColor(habit.category)
+                        .withOpacity(0.3),
+                    width: 1,
                   ),
-                  child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-
-                  Row(
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
