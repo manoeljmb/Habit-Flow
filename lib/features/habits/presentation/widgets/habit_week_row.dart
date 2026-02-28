@@ -20,16 +20,13 @@ class HabitWeekRow extends StatelessWidget {
       children: List.generate(7, (index) {
         final date = weekDates[index];
         final normalized = DateTime(date.year, date.month, date.day);
-
         final isActive = activeWeekdays.contains(date.weekday);
-
         final isCompleted = isActive && dates.any((d) =>
-            d.year == normalized.year &&
+        d.year == normalized.year &&
             d.month == normalized.month &&
             d.day == normalized.day);
 
         Color color;
-
         if (!isActive) {
           color = Colors.grey.shade800; // bloqueado
         } else if (isCompleted) {

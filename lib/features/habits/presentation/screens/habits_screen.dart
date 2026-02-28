@@ -1,10 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import '../../../../widgets/pulsing_fab.dart';
 import '../../data/habit_datasource.dart';
 import '../../data/habit_repository.dart';
 import '../widgets/habit_week_row.dart';
 import 'package:habitflow/features/habits/domain/habit.dart';
 
+// ─────────────────────────────────────────────
+//  CONSTANTS
+// ─────────────────────────────────────────────
+
+const _kCategories = [
+  "Health", "Fitness", "Study", "Work", "Spiritual",
+  "Reading", "Productivity", "Finance", "Mindset", "Diet",
+];
+
+const _kDayLabels   = ["M", "T", "W", "T", "F", "S", "S"];
+const _kDayHeaders  = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const _kMonthNames  = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December",
+];
+
+// ─────────────────────────────────────────────
+//  CATEGORY COLOR MAP
+// ─────────────────────────────────────────────
+
+final Map<String, Color> _categoryColors = {
+  "Health"      : const Color(0xFF2ECC71),
+  "Fitness"     : const Color(0xFF1ABC9C),
+  "Study"       : const Color(0xFF9B59B6),
+  "Work"        : const Color(0xFF3498DB),
+  "Finance"     : const Color(0xFFF39C12),
+  "Spiritual"   : const Color(0xFF795548),
+  "Reading"     : const Color(0xFF3F51B5),
+  "Productivity": const Color(0xFF00BCD4),
+  "Mindset"     : const Color(0xFF8BC34A),
+  "Diet"        : const Color(0xFFE74C3C),
+};
+
+Color _categoryColor(String category) =>
+    _categoryColors[category] ?? const Color(0xFF9E9E9E);
+
+// ─────────────────────────────────────────────
+//  HABITS SCREEN
+// ─────────────────────────────────────────────
 
 class HabitsScreen extends StatefulWidget {
   const HabitsScreen({super.key});
@@ -14,694 +56,1406 @@ class HabitsScreen extends StatefulWidget {
 }
 
 class _HabitsScreenState extends State<HabitsScreen> {
+  final HabitRepository _repo = HabitRepository(HabitDatasource());
+  List<Habit> _habits = [];
+  int? _pressedIndex;
 
-  int get currentDayIndex {
-    final now = DateTime.now();
-    return now.weekday % 7;
-  }
-  final HabitRepository habitRepository =
-  HabitRepository(HabitDatasource());
-  List<Habit> habits = [];
+  // ── Lifecycle ──────────────────────────────
+
   @override
   void initState() {
     super.initState();
-    loadHabits();
+    _load();
   }
-  List<DateTime> getCurrentWeek() {
+
+  // ── Data helpers ───────────────────────────
+
+  Future<void> _load() async {
+    final data = _repo.getHabits();
+    setState(() => _habits = data);
+  }
+
+  List<DateTime> _currentWeek() {
     final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday % 7));
-
-    return List.generate(7, (index) {
-      return startOfWeek.add(Duration(days: index));
-    });
+    final start = now.subtract(Duration(days: now.weekday - 1));
+    return List.generate(7, (i) => start.add(Duration(days: i)));
   }
-  Map<String, int> calculateStreak(List<DateTime> completedDates) {
-    if (completedDates.isEmpty) {
-      return {
-        "current": 0,
-        "best": 0,
-      };
-    }
 
-    // Normalizar datas (remover hora)
-    final dates = completedDates
+  Map<String, int> _streak(List<DateTime> raw) {
+    if (raw.isEmpty) return {"current": 0, "best": 0};
+
+    final dates = raw
         .map((d) => DateTime(d.year, d.month, d.day))
         .toSet()
         .toList()
-      ..sort((a, b) => a.compareTo(b));
+      ..sort();
 
-    int bestStreak = 0;
-    int tempStreak = 1;
-
+    int best = 1, temp = 1;
     for (int i = 1; i < dates.length; i++) {
-      final diff = dates[i].difference(dates[i - 1]).inDays;
-
-      if (diff == 1) {
-        tempStreak++;
-      } else {
-        if (tempStreak > bestStreak) {
-          bestStreak = tempStreak;
-        }
-        tempStreak = 1;
-      }
+      dates[i].difference(dates[i - 1]).inDays == 1 ? temp++ : temp = 1;
+      if (temp > best) best = temp;
     }
 
-    if (tempStreak > bestStreak) {
-      bestStreak = tempStreak;
+    int current = 0;
+    DateTime check = DateTime.now();
+    check = DateTime(check.year, check.month, check.day);
+    while (dates.any((d) =>
+    d.year == check.year &&
+        d.month == check.month &&
+        d.day == check.day)) {
+      current++;
+      check = check.subtract(const Duration(days: 1));
     }
 
-    // calcular streak atual
-    int currentStreak = 0;
-    DateTime checkDate = DateTime.now();
-    checkDate = DateTime(checkDate.year, checkDate.month, checkDate.day);
-
-    while (true) {
-      final exists = dates.any((d) =>
-      d.year == checkDate.year &&
-          d.month == checkDate.month &&
-          d.day == checkDate.day);
-
-      if (exists) {
-        currentStreak++;
-        checkDate = checkDate.subtract(const Duration(days: 1));
-      } else {
-        break;
-      }
-    }
-
-    return {
-      "current": currentStreak,
-      "best": bestStreak,
-    };
+    return {"current": current, "best": best};
   }
-  double calculateMonthlyAccuracy(Habit habit, DateTime month) {
-    int completed = 0;
-    int total = 0;
 
-    final year = month.year;
-    final monthNumber = month.month;
-
-    final daysInMonth = DateTime(year, monthNumber + 1, 0).day;
-
-    for (int day = 1; day <= daysInMonth; day++) {
-      final date = DateTime(year, monthNumber, day);
-
-      final isActive = habit.activeWeekdays.contains(date.weekday);
-      if (!isActive) continue;
-
+  double _monthlyAccuracy(Habit habit, DateTime month) {
+    int done = 0, total = 0;
+    final days = DateTime(month.year, month.month + 1, 0).day;
+    for (int d = 1; d <= days; d++) {
+      final date = DateTime(month.year, month.month, d);
+      if (!habit.activeWeekdays.contains(date.weekday)) continue;
       total++;
-
-      final exists = habit.completedDates.any((d) =>
-      d.year == date.year &&
-          d.month == date.month &&
-          d.day == date.day);
-
-      if (exists) {
-        completed++;
+      if (habit.completedDates.any((c) =>
+      c.year == date.year && c.month == date.month && c.day == date.day)) {
+        done++;
       }
     }
-
-    if (total == 0) return 0;
-    return (completed / total) * 100;
+    return total == 0 ? 0 : (done / total) * 100;
   }
-  double calculateYearlyAccuracy(Habit habit, int year) {
-    int completed = 0;
-    int total = 0;
 
-    for (int month = 1; month <= 12; month++) {
-      final daysInMonth = DateTime(year, month + 1, 0).day;
-
-      for (int day = 1; day <= daysInMonth; day++) {
-        final date = DateTime(year, month, day);
-
-        final isActive = habit.activeWeekdays.contains(date.weekday);
-        if (!isActive) continue;
-
+  double _yearlyAccuracy(Habit habit, int year) {
+    int done = 0, total = 0;
+    for (int m = 1; m <= 12; m++) {
+      final days = DateTime(year, m + 1, 0).day;
+      for (int d = 1; d <= days; d++) {
+        final date = DateTime(year, m, d);
+        if (!habit.activeWeekdays.contains(date.weekday)) continue;
         total++;
-
-        final exists = habit.completedDates.any((d) =>
-        d.year == date.year &&
-            d.month == date.month &&
-            d.day == date.day);
-
-        if (exists) {
-          completed++;
+        if (habit.completedDates.any((c) =>
+        c.year == date.year && c.month == date.month && c.day == date.day)) {
+          done++;
         }
       }
     }
-
-    if (total == 0) return 0;
-    return (completed / total) * 100;
+    return total == 0 ? 0 : (done / total) * 100;
   }
-  void confirmDeleteHabit(int habitIndex) {
-    showDialog(
+
+  Future<void> _toggleDay(int idx, DateTime date) async {
+    final habit = _habits[idx];
+    if (!habit.activeWeekdays.contains(date.weekday)) return;
+
+    final d = DateTime(date.year, date.month, date.day);
+    final updated = List<DateTime>.from(habit.completedDates);
+
+    updated.any((c) => c.year == d.year && c.month == d.month && c.day == d.day)
+        ? updated.removeWhere(
+            (c) => c.year == d.year && c.month == d.month && c.day == d.day)
+        : updated.add(d);
+
+    await _repo.addHabit(habit.copyWith(completedDates: updated));
+    _load();
+  }
+
+  // ── Dialogs / Sheets ───────────────────────
+
+  void _showOptions(int idx) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Delete Habit"),
-          content: const Text("Are you sure you want to break this habit?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final habit = habits[habitIndex];
-
-                await habitRepository.deleteHabit(habit.id);
-                loadHabits();
-
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              child: const Text("Delete"),
-            ),
-          ],
-        );
-      },
+      backgroundColor: Colors.transparent,
+      builder: (_) => _OptionsSheet(
+        onView:   () { Navigator.pop(context); _openDetails(idx); },
+        onEdit:   () { Navigator.pop(context); _showEditDialog(idx); },
+        onDelete: () { Navigator.pop(context); _confirmDelete(idx); },
+      ),
     );
   }
 
-  void showAddHabitDialog() {
-    final TextEditingController controller = TextEditingController();
-    List<int> selectedDays = [1, 2, 3, 4, 5, 6, 7];
-    String selectedCategory = "Health";
+  void _openDetails(int idx) {
+    final h = _habits[idx];
+    final s = _streak(h.completedDates);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HabitDetailsScreen(
+          habit: h,
+          currentStreak: s["current"]!,
+          bestStreak: s["best"]!,
+          monthlyAccuracy: _monthlyAccuracy(h, DateTime.now()),
+          yearlyAccuracy: _yearlyAccuracy(h, DateTime.now().year),
+        ),
+      ),
+    );
+  }
+
+  void _showAddDialog() => _showHabitDialog();
+  void _showEditDialog(int idx) => _showHabitDialog(existing: _habits[idx]);
+
+  void _showHabitDialog({Habit? existing}) {
+    final ctrl = TextEditingController(text: existing?.title ?? '');
+    List<int> days = existing != null
+        ? List.from(existing.activeWeekdays)
+        : [1, 2, 3, 4, 5, 6, 7];
+    String cat = existing?.category ?? "Health";
 
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("New Habit"),
-          content: StatefulBuilder(
-            builder: (context, setModalState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: controller,
-                    decoration: const InputDecoration(
-                      hintText: "Enter the name of the habit.",
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, set) => AlertDialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24)),
+          title: Text(
+            existing == null ? "New Habit" : "Edit Habit",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Name field
+                TextField(
+                  controller: ctrl,
+                  decoration: InputDecoration(
+                    hintText: "Habit name",
+                    filled: true,
+                    fillColor:
+                    Theme.of(context).colorScheme.surfaceVariant,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
                     ),
+                    prefixIcon: const Icon(Icons.edit_outlined),
                   ),
-                  const SizedBox(height: 16),
+                ),
+                const SizedBox(height: 16),
 
-                  DropdownButtonFormField<String>(
-                    value: selectedCategory,
-                    items: [
-                      "Health",
-                      "Fitness",
-                      "Study",
-                      "Work",
-                      "Spiritual",
-                      "Reading",
-                      "Productivity",
-                      "Finance",
-                      "Mindset",
-                      "Diet",
-                    ].map(
-                          (category) => DropdownMenuItem(
-                        value: category,
-                        child: Text(category),
-                      ),
-                    ).toList(),
-                    onChanged: (value) {
-                      setModalState(() {
-                        selectedCategory = value!;
-                      });
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "Days of the week",
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                // Category
+                const Text("Category",
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: cat,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor:
+                    Theme.of(context).colorScheme.surfaceVariant,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
                     ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
                   ),
+                  items: _kCategories
+                      .map((e) =>
+                      DropdownMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (v) => set(() => cat = v!),
+                ),
+                const SizedBox(height: 16),
 
-                  const SizedBox(height: 8),
-
-                  Wrap(
-                    spacing: 8,
-                    children: List.generate(7, (index) {
-                      final day = index + 1;
-                      final isSelected = selectedDays.contains(day);
-
-                      return ChoiceChip(
-                        label: Text(
-                          ["S", "M", "T", "W", "T", "F", "S"][index],
+                // Weekdays
+                const Text("Active days",
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  children: List.generate(7, (i) {
+                    final day = i + 1;
+                    final sel = days.contains(day);
+                    return GestureDetector(
+                      onTap: () => set(() => sel
+                          ? days.remove(day)
+                          : days.add(day)),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: sel
+                              ? _categoryColor(cat)
+                              : Theme.of(context)
+                              .colorScheme
+                              .surfaceVariant,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        selected: isSelected,
-                        onSelected: (_) {
-                          setModalState(() {
-                            if (isSelected) {
-                              selectedDays.remove(day);
-                            } else {
-                              selectedDays.add(day);
-                            }
-                          });
-                        },
-                      );
-                    }),
-                  ),
-                ],
-              );
-            },
+                        child: Center(
+                          child: Text(
+                            _kDayLabels[i],
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: sel
+                                  ? Colors.white
+                                  : Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.5),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text("Cancel"),
             ),
-            ElevatedButton(
+            FilledButton(
               onPressed: () async {
-                if (controller.text.trim().isEmpty) return;
-
-                final newHabit = Habit(
+                if (ctrl.text.trim().isEmpty) return;
+                final h = (existing ?? Habit(
                   id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  title: controller.text.trim(),
+                  title: '',
                   completedDates: [],
-                  activeWeekdays: selectedDays,
-                  category: selectedCategory,
+                  activeWeekdays: [],
+                  category: '',
+                )).copyWith(
+                  title: ctrl.text.trim(),
+                  category: cat,
+                  activeWeekdays: days,
                 );
-
-                await habitRepository.addHabit(newHabit);
-                await loadHabits();
-
+                await _repo.addHabit(h);
+                await _load();
                 Navigator.pop(context);
               },
-              child: const Text("Create"),
+              child: Text(existing == null ? "Create" : "Save"),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Future<void> loadHabits() async {
-    habits = habitRepository.getHabits();
-
-
-
-    setState(() {});
-  }
-  Future<void> toggleDay(int habitIndex, DateTime date) async {
-    final habit = habits[habitIndex];
-
-    // 🔒 BLOCK INACTIVE DAYS
-    if (!habit.activeWeekdays.contains(date.weekday)) {
-      return;
-    }
-
-    final dateOnly = DateTime(date.year, date.month, date.day);
-
-    List<DateTime> updatedDates = List.from(habit.completedDates);
-
-    final exists = updatedDates.any((d) =>
-    d.year == dateOnly.year &&
-        d.month == dateOnly.month &&
-        d.day == dateOnly.day);
-
-    if (exists) {
-      updatedDates.removeWhere((d) =>
-      d.year == dateOnly.year &&
-          d.month == dateOnly.month &&
-          d.day == dateOnly.day);
-    } else {
-      updatedDates.add(dateOnly);
-    }
-
-    final updatedHabit = habit.copyWith(
-      completedDates: updatedDates,
-    );
-
-    await habitRepository.addHabit(updatedHabit);
-    loadHabits();
-  }
-  Color getHabitCategoryColor(String category) {
-    switch (category) {
-      case "Health":
-        return Colors.green;
-      case "Fitness":
-        return Colors.teal;
-      case "Study":
-        return Colors.purple;
-      case "Work":
-        return Colors.blue;
-      case "Finance":
-        return Colors.orange;
-      case "Spiritual":
-        return Colors.brown;
-      case "Reading":
-        return Colors.indigo;
-      case "Productivity":
-        return Colors.cyan;
-      case "Mindset":
-        return Colors.lime;
-      case "Diet":
-        return Colors.redAccent;
-      default:
-        return Colors.grey;
-    }
-  }
-  void showMonthlyCalendar(BuildContext context, int habitIndex) {
-
-    DateTime current = DateTime.now();
-
-    showModalBottomSheet(
+  void _confirmDelete(int idx) {
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      builder: (context) {
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-
-            int year = current.year;
-            int month = current.month;
-
-            final monthNames = [
-              "January","February","March","April","May","June",
-              "July","August","September","October","November","December"
-            ];
-
-            final habit = habits[habitIndex];
-            final dates = habit.completedDates;
-
-            final daysInMonth = DateUtils.getDaysInMonth(year, month);
-            final firstDay = DateTime(year, month, 1);
-            final startingWeekday = firstDay.weekday % 7;
-
-            List<Widget> dayWidgets = [];
-
-            for (int i = 0; i < startingWeekday; i++) {
-              dayWidgets.add(const SizedBox());
-            }
-
-            for (int day = 1; day <= daysInMonth; day++) {
-              final date = DateTime(year, month, day);
-
-              final isActive =
-              habit.activeWeekdays.contains(date.weekday);
-
-              final isCompleted = dates.any((d) =>
-              d.year == date.year &&
-                  d.month == date.month &&
-                  d.day == date.day);
-
-              Color color;
-
-              if (!isActive) {
-                color = Colors.grey.shade800;
-              } else if (isCompleted) {
-                color = Colors.green;
-              } else {
-                color = Colors.red.withOpacity(0.6);
-              }
-
-              dayWidgets.add(
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: color,
-                  ),
-                  child: Center(
-                    child: Text(
-                      day.toString(),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            return Container(
-              padding: const EdgeInsets.all(20),
-              height: 500,
-              child: Column(
-                children: [
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left),
-                        onPressed: () {
-                          setModalState(() {
-                            current = DateTime(year, month - 1);
-                          });
-                        },
-                      ),
-
-                      Text(
-                        "${monthNames[month - 1]} $year",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right),
-                        onPressed: () {
-                          setModalState(() {
-                            current = DateTime(year, month + 1);
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  const Row(
-                    children: [
-                      Expanded(child: Center(child: Text("Su"))),
-                      Expanded(child: Center(child: Text("Mo"))),
-                      Expanded(child: Center(child: Text("Tu"))),
-                      Expanded(child: Center(child: Text("We"))),
-                      Expanded(child: Center(child: Text("Th"))),
-                      Expanded(child: Center(child: Text("Fr"))),
-                      Expanded(child: Center(child: Text("Sa"))),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Expanded(
-                    child: GridView.count(
-                      crossAxisCount: 7,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      children: dayWidgets,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      builder: (_) => AlertDialog(
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text("Delete Habit"),
+        content:
+        const Text("This habit and all its data will be permanently removed."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              await _repo.deleteHabit(_habits[idx].id);
+              _load();
+              Navigator.pop(context);
+            },
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
     );
   }
+
+  // ── Week stats helper ──────────────────────
+
+  ({int done, int total, double pct}) _weekStats(Habit habit) {
+    final week = _currentWeek();
+    int done = 0, total = 0;
+    for (final d in week) {
+      if (!habit.activeWeekdays.contains(d.weekday)) continue;
+      total++;
+      if (habit.completedDates.any((c) =>
+      c.year == d.year && c.month == d.month && c.day == d.day)) {
+        done++;
+      }
+    }
+    return (done: done, total: total, pct: total == 0 ? 0 : done / total);
+  }
+
+  // ── Build ──────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Habits")),
+    final cs = Theme.of(context).colorScheme;
 
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: habits.isEmpty
-            ? Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.repeat,
-                size: 60,
-                color: Colors.grey.shade400,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                "No habits yet",
-                style: TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: showAddHabitDialog,
-                child: const Text("Create your first habit"),
+    return Scaffold(
+      backgroundColor: cs.background,
+      appBar: _buildAppBar(context, cs),
+      floatingActionButton: PulsingFAB(onTap: _showAddDialog),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      body: _habits.isEmpty ? _buildEmpty(context) : _buildList(context),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext ctx, ColorScheme cs) {
+    return AppBar(
+      backgroundColor: cs.background,
+      elevation: 0,
+      centerTitle: false,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "My Habits",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: cs.onBackground,
+            ),
+          ),
+          Text(
+            DateFormat("EEEE, d MMMM").format(DateTime.now()),
+            style: TextStyle(fontSize: 12, color: cs.onBackground.withOpacity(0.45)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Theme.of(context)
+                  .colorScheme
+                  .primary
+                  .withOpacity(0.08),
+            ),
+            child: Icon(Icons.track_changes_rounded,
+                size: 56,
+                color: Theme.of(context).colorScheme.primary),
+          ),
+          const SizedBox(height: 20),
+          const Text("No habits yet",
+              style:
+              TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Text(
+            "Start building your routine today",
+            style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onBackground
+                    .withOpacity(0.45)),
+          ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: _showAddDialog,
+            icon: const Icon(Icons.add),
+            label: const Text("Create your first habit"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+      itemCount: _habits.length,
+      itemBuilder: (_, i) => _buildHabitCard(context, i),
+    );
+  }
+
+  Widget _buildHabitCard(BuildContext context, int idx) {
+    final habit = _habits[idx];
+    final color = _categoryColor(habit.category);
+    final stats = _weekStats(habit);
+    final week  = _currentWeek();
+
+    return Dismissible(
+      key: Key(habit.id),
+      direction: DismissDirection.endToStart,
+      background: _swipeBackground(),
+      confirmDismiss: (_) => _confirmDismiss(context),
+      onDismissed: (_) async {
+        await _repo.deleteHabit(habit.id);
+        _load();
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: GestureDetector(
+          onLongPressStart: (_) {
+            HapticFeedback.mediumImpact();
+            setState(() => _pressedIndex = idx);
+          },
+          onLongPressEnd: (_) => setState(() => _pressedIndex = null),
+          onLongPress: () => _showOptions(idx),
+          child: AnimatedScale(
+            duration: const Duration(milliseconds: 140),
+            scale: _pressedIndex == idx ? 0.97 : 1.0,
+            child: _HabitCard(
+              habit: habit,
+              color: color,
+              weekDates: week,
+              weekStats: stats,
+              onDayTap: (date) => _toggleDay(idx, date),
+              onTap: () => _openDetails(idx),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _swipeBackground() => Container(
+    alignment: Alignment.centerRight,
+    padding: const EdgeInsets.only(right: 24),
+    margin: const EdgeInsets.only(bottom: 14),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Colors.red.withOpacity(0), Colors.red.shade600],
+      ),
+      borderRadius: BorderRadius.circular(24),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: const [
+        Icon(Icons.delete_outline_rounded,
+            color: Colors.white, size: 28),
+        SizedBox(height: 4),
+        Text("Delete",
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w600)),
+      ],
+    ),
+  );
+
+  Future<bool?> _confirmDismiss(BuildContext ctx) {
+    return showDialog<bool>(
+      context: ctx,
+      builder: (_) => AlertDialog(
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text("Delete Habit"),
+        content: const Text(
+            "Are you sure you want to delete this habit?"),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("Cancel")),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  HABIT CARD WIDGET
+// ─────────────────────────────────────────────
+
+class _HabitCard extends StatelessWidget {
+  final Habit habit;
+  final Color color;
+  final List<DateTime> weekDates;
+  final ({int done, int total, double pct}) weekStats;
+  final void Function(DateTime) onDayTap;
+  final VoidCallback onTap;
+
+  const _HabitCard({
+    required this.habit,
+    required this.color,
+    required this.weekDates,
+    required this.weekStats,
+    required this.onDayTap,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: color.withOpacity(0.2), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-        )
-            : ListView.builder(
-          itemCount: habits.length,
-          itemBuilder: (context, habitIndex) {
-            final habit = habits[habitIndex];
-            final dates = habit.completedDates;
-
-            final streakData = calculateStreak(dates);
-            final monthlyAccuracy =
-            calculateMonthlyAccuracy(habit, DateTime.now());
-
-            final yearlyAccuracy =
-            calculateYearlyAccuracy(habit, DateTime.now().year);
-
-            final weekDates = getCurrentWeek();
-
-            int completed = 0;
-            int total = 0;
-
-            for (final date in weekDates) {
-              final normalized = DateTime(date.year, date.month, date.day);
-              final isActive =
-              habit.activeWeekdays.contains(date.weekday);
-
-              if (!isActive) continue;
-
-              total++;
-
-              final exists = dates.any((d) =>
-              d.year == normalized.year &&
-                  d.month == normalized.month &&
-                  d.day == normalized.day);
-
-              if (exists) completed++;
-            }
-
-            final percentage =
-            total == 0 ? 0 : (completed / total) * 100;
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: getHabitCategoryColor(habit.category)
-                      .withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: getHabitCategoryColor(habit.category)
-                        .withOpacity(0.3),
-                    width: 1,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header Row ──────────────────
+              Row(
+                children: [
+                  // Category dot + title
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                        color: color, shape: BoxShape.circle),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        habit.title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      habit.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
+                        letterSpacing: 0.1,
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => confirmDeleteHabit(habitIndex),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: const [
-                      Expanded(child: Center(child: Text("Sun"))),
-                      Expanded(child: Center(child: Text("Mon"))),
-                      Expanded(child: Center(child: Text("Tue"))),
-                      Expanded(child: Center(child: Text("Wed"))),
-                      Expanded(child: Center(child: Text("Thu"))),
-                      Expanded(child: Center(child: Text("Fri"))),
-                      Expanded(child: Center(child: Text("Sat"))),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  GestureDetector(
-                    onLongPress: () {
-                      showMonthlyCalendar(context, habitIndex);
-                    },
-                    child: HabitWeekRow(
-                      weekDates: weekDates,
-                      dates: habit.completedDates,
-                      activeWeekdays: habit.activeWeekdays,
-                      onTap: (date) => toggleDay(habitIndex, date),
                     ),
                   ),
-
-                  const SizedBox(height: 12),
-
-                  const SizedBox(height: 12),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-
-                      // 🔥 Main indicator (without "Assertiveness" text)
-                      Row(
-                        children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check,
-                              size: 14,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            "${percentage.toStringAsFixed(0)}%",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
+                  // Category chip
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Text(
+                      habit.category,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: color,
                       ),
-
-                      // 📅 Calendar (opens monthly modal)
-                      IconButton(
-                        icon: const Icon(Icons.calendar_month_outlined),
-                        onPressed: () {
-                          showMonthlyCalendar(context, habitIndex);
-                        },
-                      ),
-                    ],
+                    ),
                   ),
+                ],
+              ),
 
-                  const SizedBox(height: 8),
+              const SizedBox(height: 14),
 
-                  Text(
-                    "🔥 Current: ${streakData["current"]} days | 🏆 Best: ${streakData["best"]} days",
+              // ── Week labels ─────────────────
+              Row(
+                children: _kDayHeaders
+                    .map(
+                      (d) => Expanded(
+                    child: Center(
+                      child: Text(
+                        d,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface.withOpacity(0.35),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+                    .toList(),
+              ),
+
+              const SizedBox(height: 8),
+
+              // ── Week Row ────────────────────
+              HabitWeekRow(
+                weekDates: weekDates,
+                dates: habit.completedDates,
+                activeWeekdays: habit.activeWeekdays,
+                onTap: onDayTap,
+              ),
+
+              const SizedBox(height: 14),
+
+              // ── Weekly progress bar ─────────
+              _WeekProgressBar(
+                done: weekStats.done,
+                total: weekStats.total,
+                pct: weekStats.pct,
+                color: color,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  WEEK PROGRESS BAR
+// ─────────────────────────────────────────────
+
+class _WeekProgressBar extends StatelessWidget {
+  final int done, total;
+  final double pct;
+  final Color color;
+
+  const _WeekProgressBar({
+    required this.done,
+    required this.total,
+    required this.pct,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "This week",
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withOpacity(0.4)),
+            ),
+            Text(
+              "$done / $total days",
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: color),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(100),
+          child: LinearProgressIndicator(
+            value: pct,
+            minHeight: 5,
+            backgroundColor: color.withOpacity(0.12),
+            valueColor: AlwaysStoppedAnimation(color),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  OPTIONS BOTTOM SHEET
+// ─────────────────────────────────────────────
+
+class _OptionsSheet extends StatelessWidget {
+  final VoidCallback onView, onEdit, onDelete;
+
+  const _OptionsSheet({
+    required this.onView,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: cs.onSurface.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(100),
+              ),
+            ),
+            _SheetTile(
+              icon: Icons.bar_chart_rounded,
+              label: "View details",
+              color: cs.primary,
+              onTap: onView,
+            ),
+            _SheetTile(
+              icon: Icons.edit_rounded,
+              label: "Edit habit",
+              color: Colors.orange,
+              onTap: onEdit,
+            ),
+            _SheetTile(
+              icon: Icons.delete_outline_rounded,
+              label: "Delete habit",
+              color: Colors.red,
+              onTap: onDelete,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _SheetTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+      title: Text(label,
+          style:
+          const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+      onTap: onTap,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  HABIT DETAILS SCREEN
+// ─────────────────────────────────────────────
+
+class HabitDetailsScreen extends StatelessWidget {
+  final Habit habit;
+  final int bestStreak, currentStreak;
+  final double monthlyAccuracy, yearlyAccuracy;
+
+  const HabitDetailsScreen({
+    super.key,
+    required this.habit,
+    required this.bestStreak,
+    required this.currentStreak,
+    required this.monthlyAccuracy,
+    required this.yearlyAccuracy,
+  });
+
+  // ── Helpers ────────────────────────────────
+
+  List<double> _lastSixMonths() {
+    final now = DateTime.now();
+    return List.generate(6, (i) {
+      final m = DateTime(now.year, now.month - (5 - i));
+      int done = 0, total = 0;
+      final days = DateTime(m.year, m.month + 1, 0).day;
+      for (int d = 1; d <= days; d++) {
+        final date = DateTime(m.year, m.month, d);
+        if (!habit.activeWeekdays.contains(date.weekday)) continue;
+        total++;
+        if (habit.completedDates.any((c) =>
+        c.year == date.year &&
+            c.month == date.month &&
+            c.day == date.day)) done++;
+      }
+      return total == 0 ? 0 : (done / total) * 100;
+    });
+  }
+
+  void _showCalendar(BuildContext context) {
+    DateTime current = DateTime.now();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, set) {
+          final y = current.year;
+          final m = current.month;
+          final totalDays = DateUtils.getDaysInMonth(y, m);
+          final startWD = DateTime(y, m, 1).weekday % 7;
+
+          final List<Widget> cells = [
+            ...List.generate(startWD, (_) => const SizedBox()),
+            ...List.generate(totalDays, (i) {
+              final day = i + 1;
+              final date = DateTime(y, m, day);
+              final active = habit.activeWeekdays.contains(date.weekday);
+              final done = habit.completedDates.any((c) =>
+              c.year == y && c.month == m && c.day == day);
+
+              Color bg;
+              if (!active) {
+                bg = Colors.grey.shade800;
+              } else if (done) {
+                bg = Colors.green;
+              } else {
+                bg = Colors.red.withOpacity(0.3);
+              }
+
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text("$day",
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
+                ),
+              );
+            }),
+          ];
+
+          return Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(20),
+            height: 520,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: Column(
+              children: [
+                // Handle
+                Container(
+                  width: 36, height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                ),
+                // Month nav
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left_rounded),
+                      onPressed: () =>
+                          set(() => current = DateTime(y, m - 1)),
+                    ),
+                    Text(
+                      "${_kMonthNames[m - 1]} $y",
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w700),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right_rounded),
+                      onPressed: () =>
+                          set(() => current = DateTime(y, m + 1)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Day headers
+                Row(
+                  children: ["Su","Mo","Tu","We","Th","Fr","Sa"]
+                      .map((d) => Expanded(
+                    child: Center(
+                      child: Text(d,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey)),
+                    ),
+                  ))
+                      .toList(),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: GridView.count(
+                    crossAxisCount: 7,
+                    mainAxisSpacing: 6,
+                    crossAxisSpacing: 6,
+                    children: cells,
+                  ),
+                ),
+                // Legend
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _LegendDot(color: Colors.green, label: "Done"),
+                    const SizedBox(width: 16),
+                    _LegendDot(
+                        color: Colors.red.withOpacity(0.5),
+                        label: "Missed"),
+                    const SizedBox(width: 16),
+                    _LegendDot(
+                        color: Colors.grey.shade800, label: "Inactive"),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ── Build ──────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _categoryColor(habit.category);
+    final cs = Theme.of(context).colorScheme;
+    final chartData = _lastSixMonths();
+    final now = DateTime.now();
+    final monthNames = List.generate(
+        6, (i) => DateFormat.MMM().format(DateTime(now.year, now.month - (5 - i))));
+
+    return Scaffold(
+      backgroundColor: cs.background,
+      body: CustomScrollView(
+        slivers: [
+          // ── SliverAppBar ──────────────────
+          SliverAppBar(
+            expandedHeight: 180,
+            pinned: true,
+            backgroundColor: color,
+            foregroundColor: Colors.white,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 16),
+              title: Text(
+                habit.title,
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white),
+              ),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // gradient
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          color.withOpacity(0.9),
+                          color,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                  ),
+                  // pattern overlay
+                  Positioned(
+                    right: -30,
+                    top: -30,
+                    child: Container(
+                      width: 160,
+                      height: 160,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.07),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 40,
+                    bottom: 40,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.07),
+                      ),
+                    ),
+                  ),
+                  // Category badge
+                  Positioned(
+                    top: 90,
+                    left: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Text(
+                        habit.category,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            );
-          },
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          ),
 
-      floatingActionButton: PulsingFAB(
-        onTap: showAddHabitDialog,
+          // ── Body content ──────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Stats grid
+                  _buildStatsGrid(color),
+                  const SizedBox(height: 28),
+
+                  // Section header
+                  _SectionHeader(
+                    title: "Last 6 Months",
+                    trailing: _iconBtn(
+                      context,
+                      icon: Icons.calendar_month_rounded,
+                      onTap: () => _showCalendar(context),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Bar chart
+                  _buildChart(context, chartData, monthNames, color),
+                  const SizedBox(height: 12),
+
+                  // Chart legend
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(3),
+                            )),
+                        const SizedBox(width: 6),
+                        Text(
+                          "Completion rate (%)",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onBackground.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  Widget _buildStatsGrid(Color color) {
+    final items = [
+      (
+      title: "Current Streak",
+      value: "$currentStreak days",
+      icon: Icons.local_fire_department_rounded,
+      color: Colors.orange,
+      ),
+      (
+      title: "Best Streak",
+      value: "$bestStreak days",
+      icon: Icons.emoji_events_rounded,
+      color: Colors.amber,
+      ),
+      (
+      title: "Monthly",
+      value: "${monthlyAccuracy.toStringAsFixed(0)}%",
+      icon: Icons.calendar_today_rounded,
+      color: Colors.green,
+      ),
+      (
+      title: "Yearly",
+      value: "${yearlyAccuracy.toStringAsFixed(0)}%",
+      icon: Icons.trending_up_rounded,
+      color: Colors.blue,
+      ),
+    ];
+
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 2,
+      children: items
+          .map((e) => _StatTile(
+        title: e.title,
+        value: e.value,
+        icon: e.icon,
+        color: e.color,
+      ))
+          .toList(),
+    );
+  }
+
+  Widget _buildChart(
+      BuildContext context,
+      List<double> data,
+      List<String> labels,
+      Color color,
+      ) {
+    return SizedBox(
+      height: 220,
+      child: BarChart(
+        BarChartData(
+          maxY: 100,
+          alignment: BarChartAlignment.spaceAround,
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: 25,
+            getDrawingHorizontalLine: (v) => FlLine(
+              color: Colors.grey.withOpacity(0.12),
+              strokeWidth: 1,
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          titlesData: FlTitlesData(
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: 25,
+                reservedSize: 36,
+                getTitlesWidget: (v, _) => Text(
+                  "${v.toInt()}%",
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey.withOpacity(0.6)),
+                ),
+              ),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (v, _) {
+                  final i = v.toInt();
+                  if (i < 0 || i >= labels.length) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(labels[i],
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.withOpacity(0.7))),
+                  );
+                },
+              ),
+            ),
+            rightTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+            AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          barGroups: data.asMap().entries.map((e) {
+            final isLast = e.key == data.length - 1;
+            return BarChartGroupData(
+              x: e.key,
+              barRods: [
+                BarChartRodData(
+                  toY: e.value,
+                  width: 28,
+                  borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(8)),
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: isLast
+                        ? [color, color.withOpacity(0.85)]
+                        : [
+                      color.withOpacity(0.35),
+                      color.withOpacity(0.55),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _iconBtn(BuildContext ctx,
+      {required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: Theme.of(ctx).colorScheme.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, size: 20),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  SHARED SMALL WIDGETS
+// ─────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final Widget? trailing;
+
+  const _SectionHeader({required this.title, this.trailing});
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(title,
+          style: const TextStyle(
+              fontSize: 17, fontWeight: FontWeight.w700)),
+      if (trailing != null) trailing!,
+    ],
+  );
+}
+
+class _StatTile extends StatelessWidget {
+  final String title, value;
+  final IconData icon;
+  final Color color;
+
+  const _StatTile({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding:
+    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.08),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: color.withOpacity(0.15)),
+    ),
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 16),
+        ),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(title,
+                style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500)),
+            Text(value,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w800)),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _LegendDot({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+          width: 10,
+          height: 10,
+          decoration:
+          BoxDecoration(color: color, shape: BoxShape.circle)),
+      const SizedBox(width: 5),
+      Text(label,
+          style: TextStyle(
+              fontSize: 11,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withOpacity(0.5))),
+    ],
+  );
+}
+
+// ─────────────────────────────────────────────
+//  STATS CARD (backward compat, still exported)
+// ─────────────────────────────────────────────
+
+class StatsCard extends StatelessWidget {
+  final String title, value;
+  final IconData icon;
+  final Color color;
+
+  const StatsCard({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) => _StatTile(
+    title: title,
+    value: value,
+    icon: icon,
+    color: color,
+  );
 }

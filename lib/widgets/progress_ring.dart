@@ -16,7 +16,7 @@ class ProgressRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: percentage),
+      tween: Tween(begin: 0, end: percentage.clamp(0, 100)),
       duration: const Duration(milliseconds: 800),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
@@ -36,9 +36,9 @@ class ProgressRing extends StatelessWidget {
               ),
               Text(
                 "${value.toInt()}%",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                style: TextStyle(
+                  fontSize: size * 0.28,
+                  fontWeight: FontWeight.w700,
                 ),
               )
             ],
@@ -64,21 +64,22 @@ class _RingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = size.width / 2;
 
-    final backgroundPaint = Paint()
-      ..color = Colors.grey.shade300
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
-
     final rect = Rect.fromCircle(
       center: Offset(center, center),
       radius: center - strokeWidth,
     );
 
+    final backgroundPaint = Paint()
+      ..color = Colors.grey.shade300
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
     canvas.drawArc(rect, 0, 2 * pi, false, backgroundPaint);
+
+    if (percentage <= 0) return; // 🔥 PROTEÇÃO CRÍTICA
 
     final sweepAngle = (percentage / 100) * 2 * pi;
 
-    // 🔥 GRADIENTE
     final gradient = SweepGradient(
       startAngle: -pi / 2,
       endAngle: -pi / 2 + sweepAngle,

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import '../../../tasks/data/task_repository.dart';
 import '../../../tasks/data/task_datasource.dart';
-import 'package:habitflow/features/habits/domain/habit.dart';
 import 'package:habitflow/features/tasks/domain/task.dart';
 import 'package:habitflow/core/constants/task_categories.dart';
 import 'package:habitflow/widgets/progress_ring.dart';
 import '/../widgets/pulsing_fab.dart';
-import 'package:intl/intl.dart';
 import 'package:habitflow/core/theme/theme_controller.dart';
+
+// ─────────────────────────────────────────────
+//  HOME SCREEN
+// ─────────────────────────────────────────────
 
 class HomeScreen extends StatefulWidget {
   final ThemeController themeController;
@@ -21,745 +25,1052 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  bool isDatePressed = false;
-  final taskRepository =
-  TaskRepository(TaskDatasource());
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  final TaskRepository _repo = TaskRepository(TaskDatasource());
 
-  DateTime selectedDate = DateTime.now();
-  List<Habit> habits = [];
-  List<Task> tasks = [];
+  DateTime _selectedDate = DateTime.now();
+  List<Task> _tasks = [];
+  int? _pressedIndex;
+
+  // ── Lifecycle ──────────────────────────────
 
   @override
   void initState() {
     super.initState();
-    loadTasks();
+    _load();
   }
 
-  Color getCategoryColor(String category) {
-    final match = taskCategories
-        .firstWhere(
+  // ── Data helpers ───────────────────────────
+
+  void _load() {
+    setState(() => _tasks = _repo.getTasks());
+  }
+
+  List<Task> get _tasksForDate => _tasks.where((t) {
+    return t.date.year == _selectedDate.year &&
+        t.date.month == _selectedDate.month &&
+        t.date.day == _selectedDate.day;
+  }).toList();
+
+  Color _colorOf(String category) {
+    final match = taskCategories.firstWhere(
           (c) => c.name == category,
       orElse: () => taskCategories.first,
     );
-
     return match.color;
   }
 
-  List<Task> getTasksForSelectedDate() {
-    return tasks.where((task) {
-      final taskDate = task.date;
+  // ── Task dialog ────────────────────────────
 
-      return taskDate.year == selectedDate.year &&
-          taskDate.month == selectedDate.month &&
-          taskDate.day == selectedDate.day;
-    }).toList();
-  }
-
-  void showTaskDialog({Task? existingTask}) {
-    final titleController =
-    TextEditingController(text: existingTask?.title ?? "");
-
-    String selectedCategory =
-        existingTask?.category ?? "General";
-
-    DateTime selectedDate =
-        existingTask?.date ?? DateTime.now();
+  void _showTaskDialog({Task? existing}) {
+    final ctrl = TextEditingController(text: existing?.title ?? '');
+    String cat = existing?.category ?? taskCategories.first.name;
+    DateTime date = existing?.date ?? _selectedDate;
 
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, set) => AlertDialog(
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Text(
-            existingTask == null ? "New Task" : "Edit Task",
+            existing == null ? "New Task" : "Edit Task",
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
-          content: StatefulBuilder(
-            builder: (context, setModalState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleController,
-                    decoration: const InputDecoration(
-                      hintText: "Type the task",
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title
+                TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: "Task name",
+                    filled: true,
+                    fillColor:
+                    Theme.of(ctx).colorScheme.surfaceVariant,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
                     ),
+                    prefixIcon: const Icon(Icons.task_alt_rounded),
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: selectedCategory,
-                    items: taskCategories
-                        .map(
-                          (category) => DropdownMenuItem(
-                        value: category.name,
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 12,
-                              height: 12,
-                              margin: const EdgeInsets.only(right: 8),
-                              decoration: BoxDecoration(
-                                color: category.color,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            Text(category.name),
-                          ],
-                        ),
-                      ),
-                    )
-                        .toList(),
-                    onChanged: (value) {
-                      setModalState(() {
-                        selectedCategory = value!;
-                      });
-                    },
+                ),
+                const SizedBox(height: 16),
+
+                // Category
+                const Text("Category",
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: cat,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Theme.of(ctx).colorScheme.surfaceVariant,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTapDown: (_) => setState(() => isDatePressed = true),
-                        onTapUp: (_) {
-                          setState(() => isDatePressed = false);
-                          showPlannerCalendar(context);
-                        },
-                        onTapCancel: () => setState(() => isDatePressed = false),
-                        child: AnimatedScale(
-                          scale: isDatePressed ? 0.96 : 1.0,
-                          duration: const Duration(milliseconds: 120),
-                          curve: Curves.easeOut,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 6,
-                            ),
+                  items: taskCategories
+                      .map(
+                        (c) => DropdownMenuItem(
+                      value: c.name,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            margin: const EdgeInsets.only(right: 10),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? const Color(0xFF2C2C2E)
-                                  : Colors.white,
-                              border: Border.all(
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.white.withOpacity(0.08)
-                                    : Colors.black.withOpacity(0.06),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Text(
-                              "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
+                              color: c.color,
+                              shape: BoxShape.circle,
                             ),
                           ),
-                        ),
+                          Text(c.name),
+                        ],
                       ),
-                      TextButton(
-                        onPressed: () async {
-                          final picked =
-                          await showDatePicker(
-                            context: context,
-                            initialDate: selectedDate,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2100),
-                          );
+                    ),
+                  )
+                      .toList(),
+                  onChanged: (v) => set(() => cat = v!),
+                ),
+                const SizedBox(height: 16),
 
-                          if (picked != null) {
-                            setModalState(() {
-                              selectedDate = picked;
-                            });
-                          }
-                        },
-                        child:
-                        const Text("Select date"),
-                      ),
-                    ],
+                // Date
+                const Text("Date",
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: ctx,
+                      initialDate: date,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) set(() => date = picked);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 13),
+                    decoration: BoxDecoration(
+                      color: Theme.of(ctx).colorScheme.surfaceVariant,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today_rounded,
+                            size: 18,
+                            color: Theme.of(ctx)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.5)),
+                        const SizedBox(width: 10),
+                        Text(
+                          DateFormat("EEE, d MMM yyyy").format(date),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              );
-            },
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () =>
-                  Navigator.pop(context),
+              onPressed: () => Navigator.pop(context),
               child: const Text("Cancel"),
             ),
-            ElevatedButton(
+            FilledButton(
               onPressed: () async {
-                if (titleController.text.trim().isEmpty) return;
-
-                if (existingTask == null) {
-                  final newTask = Task(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    title: titleController.text.trim(),
-                    date: selectedDate,
-                    isDone: false,
-                    category: selectedCategory,
-                  );
-
-                  await taskRepository.addTask(newTask);
-                } else {
-                  final updatedTask = existingTask.copyWith(
-                    title: titleController.text.trim(),
-                    category: selectedCategory,
-                    date: selectedDate,
-                  );
-
-                  await taskRepository.addTask(updatedTask);
-                }
-
-                loadTasks();
+                if (ctrl.text.trim().isEmpty) return;
+                final t = (existing ??
+                    Task(
+                      id: DateTime.now()
+                          .millisecondsSinceEpoch
+                          .toString(),
+                      title: '',
+                      date: date,
+                      isDone: false,
+                      category: cat,
+                    ))
+                    .copyWith(
+                  title: ctrl.text.trim(),
+                  category: cat,
+                  date: date,
+                );
+                await _repo.addTask(t);
+                _load();
                 Navigator.pop(context);
               },
-              child: Text(
-                existingTask == null
-                    ? "Create"
-                    : "Save",
-              ),
+              child: Text(existing == null ? "Create" : "Save"),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
-  void showPlannerCalendar(BuildContext context) {
-    DateTime tempDate = selectedDate;
+  // ── Planner calendar ───────────────────────
 
+  void _showPlanner() {
+    DateTime temp = _selectedDate;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final daysInMonth =
-            DateUtils.getDaysInMonth(tempDate.year, tempDate.month);
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, set) {
+          final y = temp.year;
+          final m = temp.month;
+          final totalDays = DateUtils.getDaysInMonth(y, m);
+          final firstWD = DateTime(y, m, 1).weekday - 1;
+          final cs = Theme.of(ctx).colorScheme;
 
-            return Container(
-              padding: const EdgeInsets.all(20),
-              height: 500,
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF2C2C2E)
-                    : Colors.white,
-                borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(30)),
-                border: Border.all(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white.withOpacity(0.05)
-                      : Colors.black.withOpacity(0.05),
+          return Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                Container(
+                  width: 36, height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: cs.onSurface.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
 
-                  // 🔹 HEADER
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left),
-                        onPressed: () {
-                          setModalState(() {
-                            tempDate = DateTime(
-                              tempDate.year,
-                              tempDate.month - 1,
-                            );
-                          });
-                        },
-                      ),
-                      Text(
-                        DateFormat('MMMM yyyy').format(tempDate),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right),
-                        onPressed: () {
-                          setModalState(() {
-                            tempDate = DateTime(
-                              tempDate.year,
-                              tempDate.month + 1,
-                            );
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 🔹 GRID
-                  Expanded(
-                    child: GridView.builder(
-                      itemCount: daysInMonth,
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 7,
-                      ),
-                      itemBuilder: (context, index) {
-                        final day = index + 1;
-                        final date =
-                        DateTime(tempDate.year, tempDate.month, day);
-
-                        final hasTask = tasks.any((task) =>
-                        task.date.year == date.year &&
-                            task.date.month == date.month &&
-                            task.date.day == date.day);
-
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedDate = date;
-                            });
-                            Navigator.pop(context);
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: hasTask
-                                  ? Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.3)
-                                  : Colors.transparent,
-                            ),
-                            child: Center(
-                              child: Text(day.toString()),
-                            ),
-                          ),
-                        );
-                      },
+                // Month nav
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _CalNavBtn(
+                      icon: Icons.chevron_left_rounded,
+                      onTap: () => set(() =>
+                      temp = DateTime(y, m - 1)),
                     ),
+                    Text(
+                      DateFormat('MMMM yyyy').format(temp),
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w700),
+                    ),
+                    _CalNavBtn(
+                      icon: Icons.chevron_right_rounded,
+                      onTap: () => set(() =>
+                      temp = DateTime(y, m + 1)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Weekday headers
+                Row(
+                  children: ["Su","Mo","Tu","We","Th","Fr","Sa"]
+                      .map((d) => Expanded(
+                    child: Center(
+                      child: Text(d,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: cs.onSurface.withOpacity(0.35),
+                          )),
+                    ),
+                  ))
+                      .toList(),
+                ),
+                const SizedBox(height: 8),
+
+                // Day grid
+                SizedBox(
+                  height: 280,
+                  child: GridView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: firstWD + totalDays,
+                    gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 7,
+                      mainAxisSpacing: 4,
+                      crossAxisSpacing: 4,
+                    ),
+                    itemBuilder: (_, i) {
+                      if (i < firstWD) return const SizedBox();
+                      final day = i - firstWD + 1;
+                      final date = DateTime(y, m, day);
+                      final isSelected = date.year == _selectedDate.year &&
+                          date.month == _selectedDate.month &&
+                          date.day == _selectedDate.day;
+                      final isToday = date.year == DateTime.now().year &&
+                          date.month == DateTime.now().month &&
+                          date.day == DateTime.now().day;
+                      final hasTasks = _tasks.any((t) =>
+                      t.date.year == y &&
+                          t.date.month == m &&
+                          t.date.day == day);
+
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() => _selectedDate = date);
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? cs.primary
+                                : isToday
+                                ? cs.primary.withOpacity(0.12)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Text(
+                                "$day",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: isSelected || isToday
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : cs.onSurface,
+                                ),
+                              ),
+                              if (hasTasks && !isSelected)
+                                Positioned(
+                                  bottom: 4,
+                                  child: Container(
+                                    width: 4,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: cs.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
-  void loadTasks() {
-    tasks = taskRepository.getTasks();
-    setState(() {});
-  }
+
+  // ── Build ──────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final filteredTasks = getTasksForSelectedDate();
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final filtered = _tasksForDate;
+    final done = filtered.where((t) => t.isDone).length;
+    double progress = 0.0;
 
-    double progress = 0;
-
-    if (filteredTasks.isNotEmpty) {
-      final done = filteredTasks.where((t) => t.isDone).length;
-      progress = done / filteredTasks.length;
+    if (filtered.isNotEmpty && filtered.length > 0) {
+      progress = done / filtered.length;
     }
+
+    if (progress.isNaN || progress.isInfinite) {
+      progress = 0.0;
+    }    final isToday = DateUtils.isSameDay(_selectedDate, DateTime.now());
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
+      backgroundColor: cs.background,
+      floatingActionButton: PulsingFAB(onTap: () => _showTaskDialog()),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-
-      floatingActionButton: PulsingFAB(
-        onTap: () => showTaskDialog(),
-      ),
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.topCenter,
-            radius: 1.3,
-            colors: Theme.of(context).brightness == Brightness.dark
-                ? [
-              const Color(0xFF1A1F2C),
-              const Color(0xFF0F1320),
-            ]
-                : [
-              const Color(0xFFE3F2ED),
-              const Color(0xFFF4F7F6),
-            ],
+      body: Column(
+        children: [
+          _buildHeader(context, cs, isDark, filtered, done, progress, isToday),
+          Expanded(
+            child: filtered.isEmpty
+                ? _buildEmpty(context, isToday)
+                : _buildTaskList(context, filtered),
           ),
-        ),
-        child: Column(
-          children: [
-
-            // 🔹 HEADER PREMIUM
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 50, 24, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-
-                      Text(
-                        "Today",
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-
-                      Row(
-                        children: [
-                          const Icon(Icons.dark_mode, size: 18),
-                          GestureDetector(
-                            onTap: () {
-                              final isDark =
-                                  widget.themeController.themeMode == ThemeMode.dark;
-
-                              widget.themeController.setTheme(
-                                isDark ? ThemeMode.light : ThemeMode.dark,
-                              );
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 400),
-                              curve: Curves.easeInOutCubic,
-                              width: 64,
-                              height: 34,
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(30),
-                                color: widget.themeController.themeMode == ThemeMode.dark
-                                    ? const Color(0xFF1E1E1E)
-                                    : const Color(0xFF6FCF97),
-                                border: Border.all(
-                                  color: widget.themeController.themeMode == ThemeMode.dark
-                                      ? Colors.grey.shade700
-                                      : Colors.transparent,
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: AnimatedAlign(
-                                duration: const Duration(milliseconds: 400),
-                                curve: Curves.easeInOutCubic,
-                                alignment:
-                                widget.themeController.themeMode == ThemeMode.dark
-                                    ? Alignment.centerLeft
-                                    : Alignment.centerRight,
-                                child: Container(
-                                  width: 26,
-                                  height: 26,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const Icon(Icons.light_mode, size: 18),
-                        ],
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  GestureDetector(
-                    onTap: () => showPlannerCalendar(context),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFF2C2C2E)
-                            : const Color(0xFFF2F2F7),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _NavButton(
-                        icon: Icons.chevron_left,
-                        onTap: () {
-                          setState(() {
-                            selectedDate =
-                                selectedDate.subtract(const Duration(days: 1));
-                          });
-                        },
-                      ),
-
-                      _TodayButton(
-                        onTap: () {
-                          setState(() {
-                            selectedDate = DateTime.now();
-                          });
-                        },
-                      ),
-
-                      _NavButton(
-                        icon: Icons.chevron_right,
-                        onTap: () {
-                          setState(() {
-                            selectedDate =
-                                selectedDate.add(const Duration(days: 1));
-                          });
-                        },
-                      ),
-                    ],
-                  )
-                ],
-              ),
-            ),
-      // 🔹 LISTA
-      Expanded(
-        child: filteredTasks.isEmpty
-            ? Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.task_alt,
-                size: 60,
-                color: Colors.grey.shade400,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                "Nenhuma tarefa para este dia",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ],
-          ),
-        )
-            : ListView.builder(
-          itemCount: filteredTasks.length,
-          itemBuilder: (context, index) {
-            final task = filteredTasks[index];
-            return buildPremiumTaskCard(task);
-          },
-        ),
+        ],
       ),
-    ],
-      ),
-    ),
     );
   }
-  Widget buildPremiumTaskCard(Task task) {
+
+  // ── Header ─────────────────────────────────
+
+  Widget _buildHeader(
+      BuildContext context,
+      ColorScheme cs,
+      bool isDark,
+      List<Task> filtered,
+      int done,
+      double progress,
+      bool isToday,
+      ) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 56, 24, 20),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Row 1: Title + Theme toggle ───
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isToday ? "Today" : DateFormat("EEEE").format(_selectedDate),
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurface,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    GestureDetector(
+                      onTap: _showPlanner,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.calendar_today_rounded,
+                              size: 13,
+                              color: cs.onSurface.withOpacity(0.4)),
+                          const SizedBox(width: 5),
+                          Text(
+                            DateFormat("d MMMM yyyy").format(_selectedDate),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: cs.onSurface.withOpacity(0.45),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.keyboard_arrow_down_rounded,
+                              size: 16,
+                              color: cs.onSurface.withOpacity(0.3)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Progress ring + theme toggle
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _ThemeToggle(controller: widget.themeController),
+                  const SizedBox(height: 8),
+                  if (filtered.isNotEmpty)
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          ProgressRing(
+                            percentage: (progress * 100).clamp(0, 100),
+                            size: 48,
+                            strokeWidth: 4,
+                          ),
+
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Row 2: Date nav ───────────────
+          Row(
+            children: [
+              _NavButton(
+                icon: Icons.chevron_left_rounded,
+                onTap: () => setState(() => _selectedDate =
+                    _selectedDate.subtract(const Duration(days: 1))),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _TodayButton(
+                  isToday: isToday,
+                  onTap: () =>
+                      setState(() => _selectedDate = DateTime.now()),
+                ),
+              ),
+              const SizedBox(width: 10),
+              _NavButton(
+                icon: Icons.chevron_right_rounded,
+                onTap: () => setState(() => _selectedDate =
+                    _selectedDate.add(const Duration(days: 1))),
+              ),
+            ],
+          ),
+
+          // ── Row 3: Progress bar ───────────
+          if (filtered.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _DailyProgressBar(
+              done: done,
+              total: filtered.length,
+              progress: progress,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── Empty state ────────────────────────────
+
+  Widget _buildEmpty(BuildContext context, bool isToday) {
+    final cs = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: cs.primary.withOpacity(0.07),
+            ),
+            child: Icon(Icons.task_alt_rounded,
+                size: 52, color: cs.primary.withOpacity(0.6)),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            isToday ? "No tasks for today" : "No tasks for this day",
+            style: const TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isToday
+                ? "Tap + to add your first task"
+                : "Nothing planned here yet",
+            style: TextStyle(
+                fontSize: 13,
+                color: cs.onBackground.withOpacity(0.4)),
+          ),
+          if (isToday) ...[
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => _showTaskDialog(),
+              icon: const Icon(Icons.add),
+              label: const Text("Add task"),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── Task list ──────────────────────────────
+
+  Widget _buildTaskList(BuildContext context, List<Task> tasks) {
+    final pending = tasks.where((t) => !t.isDone).toList();
+    final completed = tasks.where((t) => t.isDone).toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      children: [
+        if (pending.isNotEmpty) ...[
+          _SectionLabel(
+            label: "Pending",
+            count: pending.length,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ...pending.asMap().entries.map((e) => _buildTaskTile(
+              context, e.value, tasks.indexOf(e.value))),
+        ],
+        if (completed.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _SectionLabel(
+            label: "Completed",
+            count: completed.length,
+            color: Colors.green,
+          ),
+          ...completed.asMap().entries.map((e) => _buildTaskTile(
+              context, e.value, tasks.indexOf(e.value))),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildTaskTile(BuildContext context, Task task, int idx) {
+    final color = _colorOf(task.category);
+
     return Dismissible(
       key: Key(task.id),
       direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: Colors.red,
-        child: Icon(
-          Icons.delete,
-          color: Theme.of(context).colorScheme.onPrimary,
-        ),
-      ),
-      onDismissed: (_) async {
-        await taskRepository.deleteTask(task.id);
-        loadTasks();
+      background: _SwipeBackground(),
+      confirmDismiss: (_) async {
+        HapticFeedback.mediumImpact();
+        return true;
       },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: getCategoryColor(task.category).withOpacity(0.08),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: getCategoryColor(task.category).withOpacity(0.3),
-            width: 1,
+      onDismissed: (_) async {
+        await _repo.deleteTask(task.id);
+        _load();
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: GestureDetector(
+          onLongPress: () {
+            HapticFeedback.mediumImpact();
+            _showTaskDialog(existing: task);
+          },
+          child: _TaskCard(
+            task: task,
+            color: color,
+            onToggle: () async {
+              await _repo.addTask(task.copyWith(isDone: !task.isDone));
+              _load();
+            },
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-
-            Container(
-              width: 4,
-              height: 40,
-              decoration: BoxDecoration(
-                color: getCategoryColor(task.category),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-
-            const SizedBox(width: 16),
-
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-
-                  Text(
-                    task.title,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      decoration: task.isDone
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  Text(
-                    task.category,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: getCategoryColor(task.category),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            IconButton(
-              icon: Icon(
-                task.isDone
-                    ? Icons.check_circle
-                    : Icons.radio_button_unchecked,
-
-                color: task.isDone
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.grey.shade400,
-              ),
-              onPressed: () async {
-                final updatedTask = task.copyWith(
-                  isDone: !task.isDone,
-                );
-
-                await taskRepository.addTask(updatedTask);
-                loadTasks();
-              },
-            ),
-          ],
         ),
       ),
     );
   }
 }
-Color getTaskCategoryColor(String category) {
-  switch (category) {
-    case "General":
-      return Colors.grey;
-    case "Health":
-      return Colors.green;
-    case "Coding":
-      return Colors.blue;
-    case "Social":
-      return Colors.teal;
-    case "Study":
-      return Colors.purple;
-    case "Work":
-      return Colors.indigo;
-    default:
-      return Colors.grey;
+
+// ─────────────────────────────────────────────
+//  TASK CARD
+// ─────────────────────────────────────────────
+
+class _TaskCard extends StatelessWidget {
+  final Task task;
+  final Color color;
+  final VoidCallback onToggle;
+
+  const _TaskCard({
+    required this.task,
+    required this.color,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final done = task.isDone;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: done
+            ? cs.surface.withOpacity(0.5)
+            : cs.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: done
+              ? cs.onSurface.withOpacity(0.06)
+              : color.withOpacity(0.2),
+          width: 1.2,
+        ),
+        boxShadow: done
+            ? []
+            : [
+          BoxShadow(
+            color: color.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Color accent bar
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: 3,
+            height: 38,
+            decoration: BoxDecoration(
+              color: done ? cs.onSurface.withOpacity(0.15) : color,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(width: 14),
+
+          // Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  task.title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: done
+                        ? cs.onSurface.withOpacity(0.35)
+                        : cs.onSurface,
+                    decoration:
+                    done ? TextDecoration.lineThrough : null,
+                    decorationColor: cs.onSurface.withOpacity(0.35),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: done
+                            ? cs.onSurface.withOpacity(0.2)
+                            : color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      task.category,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: done
+                            ? cs.onSurface.withOpacity(0.3)
+                            : color,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Checkbox
+          GestureDetector(
+            onTap: onToggle,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: done ? color : Colors.transparent,
+                border: Border.all(
+                  color: done
+                      ? color
+                      : cs.onSurface.withOpacity(0.2),
+                  width: 2,
+                ),
+              ),
+              child: done
+                  ? const Icon(Icons.check_rounded,
+                  color: Colors.white, size: 16)
+                  : null,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
+
+// ─────────────────────────────────────────────
+//  DAILY PROGRESS BAR
+// ─────────────────────────────────────────────
+
+class _DailyProgressBar extends StatelessWidget {
+  final int done, total;
+  final double progress;
+
+  const _DailyProgressBar({
+    required this.done,
+    required this.total,
+    required this.progress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final pct = (progress * 100).toStringAsFixed(0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "$done of $total tasks done",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: cs.onSurface.withOpacity(0.45),
+              ),
+            ),
+            Text(
+              "$pct%",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: progress == 1.0 ? Colors.green : cs.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(100),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 5,
+            backgroundColor: cs.primary.withOpacity(0.1),
+            valueColor: AlwaysStoppedAnimation(
+              progress == 1.0 ? Colors.green : cs.primary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  SECTION LABEL
+// ─────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  final int count;
+  final Color color;
+
+  const _SectionLabel({
+    required this.label,
+    required this.count,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, left: 2),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onBackground.withOpacity(0.45),
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding:
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Text(
+              "$count",
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  SWIPE BACKGROUND
+// ─────────────────────────────────────────────
+
+class _SwipeBackground extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Container(
+    alignment: Alignment.centerRight,
+    padding: const EdgeInsets.only(right: 24),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Colors.red.withOpacity(0), Colors.red.shade600],
+      ),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: const [
+        Icon(Icons.delete_outline_rounded,
+            color: Colors.white, size: 26),
+        SizedBox(height: 3),
+        Text("Delete",
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w700)),
+      ],
+    ),
+  );
+}
+
+// ─────────────────────────────────────────────
+//  CALENDAR NAV BUTTON
+// ─────────────────────────────────────────────
+
+class _CalNavBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _CalNavBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: cs.surfaceVariant,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 20, color: cs.onSurface),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  NAV BUTTON
+// ─────────────────────────────────────────────
 
 class _NavButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _NavButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _NavButton({required this.icon, required this.onTap});
 
   @override
   State<_NavButton> createState() => _NavButtonState();
 }
 
 class _NavButtonState extends State<_NavButton> {
-  bool isPressed = false;
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
-
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
-      onTapDown: (_) => setState(() => isPressed = true),
-      onTapUp: (_) {
-        setState(() => isPressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => isPressed = false),
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
-        scale: isPressed ? 0.92 : 1.0,
+        scale: _pressed ? 0.92 : 1.0,
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+        child: Container(
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF2C2C2E)
-                : Colors.white,
+            color: cs.surfaceVariant,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isDark
-                  ? Colors.white.withOpacity(0.08)
-                  : Colors.black.withOpacity(0.06),
+                color: cs.onSurface.withOpacity(0.07)),
+          ),
+          child: Icon(widget.icon, size: 22, color: cs.onSurface),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  TODAY BUTTON
+// ─────────────────────────────────────────────
+
+class _TodayButton extends StatefulWidget {
+  final bool isToday;
+  final VoidCallback onTap;
+
+  const _TodayButton({required this.isToday, required this.onTap});
+
+  @override
+  State<_TodayButton> createState() => _TodayButtonState();
+}
+
+class _TodayButtonState extends State<_TodayButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          height: 44,
+          decoration: BoxDecoration(
+            color: widget.isToday
+                ? cs.primary.withOpacity(0.12)
+                : cs.surfaceVariant,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: widget.isToday
+                  ? cs.primary.withOpacity(0.3)
+                  : cs.onSurface.withOpacity(0.07),
             ),
           ),
-          child: Icon(
-            widget.icon,
-            size: 20,
-            color: isDark ? Colors.white : Colors.black87,
+          child: Center(
+            child: Text(
+              "Today",
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                color: widget.isToday ? cs.primary : cs.onSurface,
+              ),
+            ),
           ),
         ),
       ),
@@ -767,59 +1078,85 @@ class _NavButtonState extends State<_NavButton> {
   }
 }
 
-class _TodayButton extends StatefulWidget {
-  final VoidCallback onTap;
+// ─────────────────────────────────────────────
+//  THEME TOGGLE
+// ─────────────────────────────────────────────
 
-  const _TodayButton({required this.onTap});
+class _ThemeToggle extends StatelessWidget {
+  final ThemeController controller;
 
-  @override
-  State<_TodayButton> createState() => _TodayButtonState();
-}
-
-class _TodayButtonState extends State<_TodayButton> {
-  bool isPressed = false;
+  const _ThemeToggle({required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDark = controller.themeMode == ThemeMode.dark;
 
     return GestureDetector(
-      onTapDown: (_) => setState(() => isPressed = true),
-      onTapUp: (_) {
-        setState(() => isPressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => isPressed = false),
-      child: AnimatedScale(
-        scale: isPressed ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 22,
-            vertical: 12,
-          ),
-          decoration: BoxDecoration(
+      onTap: () => controller.setTheme(
+          isDark ? ThemeMode.light : ThemeMode.dark),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOutCubic,
+        width: 60,
+        height: 32,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          color: isDark
+              ? const Color(0xFF2C2C2E)
+              : const Color(0xFF6FCF97),
+          border: Border.all(
             color: isDark
-                ? const Color(0xFF3A3A3C)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withOpacity(0.08)
-                  : Colors.black.withOpacity(0.08),
-            ),
+                ? Colors.white.withOpacity(0.1)
+                : Colors.transparent,
           ),
-          child: Text(
-            "Today",
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-              color: isDark ? Colors.white : Colors.black87,
+        ),
+        child: Stack(
+          children: [
+            // Icons
+            Positioned(
+              left: 2,
+              top: 0,
+              bottom: 0,
+              child: Icon(Icons.dark_mode_rounded,
+                  size: 14,
+                  color: isDark
+                      ? Colors.white.withOpacity(0.6)
+                      : Colors.white.withOpacity(0.3)),
             ),
-          ),
+            Positioned(
+              right: 2,
+              top: 0,
+              bottom: 0,
+              child: Icon(Icons.light_mode_rounded,
+                  size: 14,
+                  color: isDark
+                      ? Colors.white.withOpacity(0.3)
+                      : Colors.white.withOpacity(0.8)),
+            ),
+            // Thumb
+            AnimatedAlign(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOutCubic,
+              alignment:
+              isDark ? Alignment.centerLeft : Alignment.centerRight,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
