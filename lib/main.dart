@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:habitflow/l10n/app_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:habitflow/features/habits/presentation/screens/home_screen.dart';
 import 'package:habitflow/features/habits/presentation/screens/habits_screen.dart';
@@ -10,8 +12,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
 
-  Hive.registerAdapter(HabitAdapter());
-  Hive.registerAdapter(TaskAdapter());
+  if (!Hive.isAdapterRegistered(0)) {
+    Hive.registerAdapter(HabitAdapter());
+  }
+  if (!Hive.isAdapterRegistered(1)) {
+    Hive.registerAdapter(TaskAdapter());
+  }
 
   await Hive.openBox<Habit>('habitsBox');
   await Hive.openBox<Task>('tasksBox');
@@ -38,6 +44,22 @@ class _PlannerAppState extends State<PlannerApp> {
           debugShowCheckedModeBanner: false,
           themeMode: _themeController.themeMode,
 
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en'), // English
+            Locale('pt'), // Portuguese
+            Locale('es'), // Spanish
+            Locale('hi'), // Hindi
+            Locale('de'), // German
+            Locale('ja'), // Japanese
+            Locale('ko'), // Korean
+          ],
+
           theme: ThemeData(
             brightness: Brightness.light,
             useMaterial3: true,
@@ -55,6 +77,10 @@ class _PlannerAppState extends State<PlannerApp> {
               brightness: Brightness.dark,
             ),
           ),
+
+          onGenerateTitle: (context) {
+            return AppLocalizations.of(context)?.appTitle ?? 'HabitFlow';
+          },
 
           home: MainNavigation(
             themeController: _themeController,
@@ -91,6 +117,11 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    
+    final tasksLabel = l10n?.tasks ?? 'Tasks';
+    final habitsLabel = l10n?.habits ?? 'Habits';
+
     return Scaffold(
       body: screens[index],
       bottomNavigationBar: NavigationBar(
@@ -98,14 +129,14 @@ class _MainNavigationState extends State<MainNavigation> {
         onDestinationSelected: (value) {
           setState(() => index = value);
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.list),
-            label: 'Planner',
+            icon: const Icon(Icons.list),
+            label: tasksLabel,
           ),
           NavigationDestination(
-            icon: Icon(Icons.repeat),
-            label: 'Habits',
+            icon: const Icon(Icons.repeat),
+            label: habitsLabel,
           ),
         ],
       ),

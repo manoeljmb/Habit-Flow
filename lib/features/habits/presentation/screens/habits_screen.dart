@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:habitflow/l10n/app_localizations.dart';
 import '../../../../widgets/pulsing_fab.dart';
 import '../../data/habit_datasource.dart';
 import '../../data/habit_repository.dart';
@@ -17,32 +18,45 @@ const _kCategories = [
   "Reading", "Productivity", "Finance", "Mindset", "Diet",
 ];
 
-const _kDayLabels   = ["M", "T", "W", "T", "F", "S", "S"];
-const _kDayHeaders  = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-const _kMonthNames  = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December",
-];
+const _kDayLabels = ["M", "T", "W", "T", "F", "S", "S"];
+const _kDayHeaders = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 // ─────────────────────────────────────────────
 //  CATEGORY COLOR MAP
 // ─────────────────────────────────────────────
 
 final Map<String, Color> _categoryColors = {
-  "Health"      : const Color(0xFF2ECC71),
-  "Fitness"     : const Color(0xFF1ABC9C),
-  "Study"       : const Color(0xFF9B59B6),
-  "Work"        : const Color(0xFF3498DB),
-  "Finance"     : const Color(0xFFF39C12),
-  "Spiritual"   : const Color(0xFF795548),
-  "Reading"     : const Color(0xFF3F51B5),
+  "Health": const Color(0xFF2ECC71),
+  "Fitness": const Color(0xFF1ABC9C),
+  "Study": const Color(0xFF9B59B6),
+  "Work": const Color(0xFF3498DB),
+  "Finance": const Color(0xFFF39C12),
+  "Spiritual": const Color(0xFF795548),
+  "Reading": const Color(0xFF3F51B5),
   "Productivity": const Color(0xFF00BCD4),
-  "Mindset"     : const Color(0xFF8BC34A),
-  "Diet"        : const Color(0xFFE74C3C),
+  "Mindset": const Color(0xFF8BC34A),
+  "Diet": const Color(0xFFE74C3C),
 };
 
 Color _categoryColor(String category) =>
     _categoryColors[category] ?? const Color(0xFF9E9E9E);
+
+String _getTranslatedCategory(BuildContext context, String category) {
+  final l10n = AppLocalizations.of(context)!;
+  switch (category) {
+    case "Health": return l10n.health;
+    case "Fitness": return l10n.fitness;
+    case "Study": return l10n.study;
+    case "Work": return l10n.work;
+    case "Spiritual": return l10n.spiritual;
+    case "Reading": return l10n.reading;
+    case "Productivity": return l10n.productivity;
+    case "Finance": return l10n.finance;
+    case "Mindset": return l10n.mindset;
+    case "Diet": return l10n.diet;
+    default: return category;
+  }
+}
 
 // ─────────────────────────────────────────────
 //  HABITS SCREEN
@@ -60,15 +74,11 @@ class _HabitsScreenState extends State<HabitsScreen> {
   List<Habit> _habits = [];
   int? _pressedIndex;
 
-  // ── Lifecycle ──────────────────────────────
-
   @override
   void initState() {
     super.initState();
     _load();
   }
-
-  // ── Data helpers ───────────────────────────
 
   Future<void> _load() async {
     final data = _repo.getHabits();
@@ -100,7 +110,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     DateTime check = DateTime.now();
     check = DateTime(check.year, check.month, check.day);
     while (dates.any((d) =>
-    d.year == check.year &&
+        d.year == check.year &&
         d.month == check.month &&
         d.day == check.day)) {
       current++;
@@ -118,7 +128,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       if (!habit.activeWeekdays.contains(date.weekday)) continue;
       total++;
       if (habit.completedDates.any((c) =>
-      c.year == date.year && c.month == date.month && c.day == date.day)) {
+          c.year == date.year && c.month == date.month && c.day == date.day)) {
         done++;
       }
     }
@@ -134,7 +144,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         if (!habit.activeWeekdays.contains(date.weekday)) continue;
         total++;
         if (habit.completedDates.any((c) =>
-        c.year == date.year && c.month == date.month && c.day == date.day)) {
+            c.year == date.year && c.month == date.month && c.day == date.day)) {
           done++;
         }
       }
@@ -158,16 +168,23 @@ class _HabitsScreenState extends State<HabitsScreen> {
     _load();
   }
 
-  // ── Dialogs / Sheets ───────────────────────
-
   void _showOptions(int idx) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => _OptionsSheet(
-        onView:   () { Navigator.pop(context); _openDetails(idx); },
-        onEdit:   () { Navigator.pop(context); _showEditDialog(idx); },
-        onDelete: () { Navigator.pop(context); _confirmDelete(idx); },
+        onView: () {
+          Navigator.pop(context);
+          _openDetails(idx);
+        },
+        onEdit: () {
+          Navigator.pop(context);
+          _showEditDialog(idx);
+        },
+        onDelete: () {
+          Navigator.pop(context);
+          _confirmDelete(idx);
+        },
       ),
     );
   }
@@ -193,6 +210,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   void _showEditDialog(int idx) => _showHabitDialog(existing: _habits[idx]);
 
   void _showHabitDialog({Habit? existing}) {
+    final l10n = AppLocalizations.of(context)!;
     final ctrl = TextEditingController(text: existing?.title ?? '');
     List<int> days = existing != null
         ? List.from(existing.activeWeekdays)
@@ -203,10 +221,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (ctx, set) => AlertDialog(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Text(
-            existing == null ? "New Habit" : "Edit Habit",
+            existing == null ? l10n.addHabit : l10n.editHabit,
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           content: SingleChildScrollView(
@@ -214,14 +232,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Name field
                 TextField(
                   controller: ctrl,
                   decoration: InputDecoration(
-                    hintText: "Habit name",
+                    hintText: l10n.habitName,
                     filled: true,
-                    fillColor:
-                    Theme.of(context).colorScheme.surfaceVariant,
+                    fillColor: Theme.of(context).colorScheme.surfaceVariant,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -230,18 +246,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Category
-                const Text("Category",
-                    style: TextStyle(
+                Text(l10n.category,
+                    style: const TextStyle(
                         fontWeight: FontWeight.w600, fontSize: 13)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: cat,
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor:
-                    Theme.of(context).colorScheme.surfaceVariant,
+                    fillColor: Theme.of(context).colorScheme.surfaceVariant,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -250,16 +263,14 @@ class _HabitsScreenState extends State<HabitsScreen> {
                         horizontal: 14, vertical: 12),
                   ),
                   items: _kCategories
-                      .map((e) =>
-                      DropdownMenuItem(value: e, child: Text(e)))
+                      .map((e) => DropdownMenuItem(
+                          value: e, child: Text(_getTranslatedCategory(context, e))))
                       .toList(),
                   onChanged: (v) => set(() => cat = v!),
                 ),
                 const SizedBox(height: 16),
-
-                // Weekdays
-                const Text("Active days",
-                    style: TextStyle(
+                Text(l10n.activeDays,
+                    style: const TextStyle(
                         fontWeight: FontWeight.w600, fontSize: 13)),
                 const SizedBox(height: 8),
                 Wrap(
@@ -268,9 +279,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     final day = i + 1;
                     final sel = days.contains(day);
                     return GestureDetector(
-                      onTap: () => set(() => sel
-                          ? days.remove(day)
-                          : days.add(day)),
+                      onTap: () => set(() => sel ? days.remove(day) : days.add(day)),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         width: 36,
@@ -279,8 +288,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
                           color: sel
                               ? _categoryColor(cat)
                               : Theme.of(context)
-                              .colorScheme
-                              .surfaceVariant,
+                                  .colorScheme
+                                  .surfaceVariant,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
@@ -292,9 +301,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
                               color: sel
                                   ? Colors.white
                                   : Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.5),
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.5),
                             ),
                           ),
                         ),
@@ -308,18 +317,20 @@ class _HabitsScreenState extends State<HabitsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: () async {
                 if (ctrl.text.trim().isEmpty) return;
-                final h = (existing ?? Habit(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  title: '',
-                  completedDates: [],
-                  activeWeekdays: [],
-                  category: '',
-                )).copyWith(
+                final h = (existing ??
+                        Habit(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          title: '',
+                          completedDates: [],
+                          activeWeekdays: [],
+                          category: '',
+                        ))
+                    .copyWith(
                   title: ctrl.text.trim(),
                   category: cat,
                   activeWeekdays: days,
@@ -328,7 +339,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 await _load();
                 Navigator.pop(context);
               },
-              child: Text(existing == null ? "Create" : "Save"),
+              child: Text(existing == null ? l10n.create : l10n.save),
             ),
           ],
         ),
@@ -337,18 +348,17 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   void _confirmDelete(int idx) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text("Delete Habit"),
-        content:
-        const Text("This habit and all its data will be permanently removed."),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(l10n.deleteHabit),
+        content: Text(l10n.deleteHabitConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -357,14 +367,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
               _load();
               Navigator.pop(context);
             },
-            child: const Text("Delete"),
+            child: Text(l10n.delete),
           ),
         ],
       ),
     );
   }
-
-  // ── Week stats helper ──────────────────────
 
   ({int done, int total, double pct}) _weekStats(Habit habit) {
     final week = _currentWeek();
@@ -373,29 +381,28 @@ class _HabitsScreenState extends State<HabitsScreen> {
       if (!habit.activeWeekdays.contains(d.weekday)) continue;
       total++;
       if (habit.completedDates.any((c) =>
-      c.year == d.year && c.month == d.month && c.day == d.day)) {
+          c.year == d.year && c.month == d.month && c.day == d.day)) {
         done++;
       }
     }
     return (done: done, total: total, pct: total == 0 ? 0 : done / total);
   }
 
-  // ── Build ──────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: cs.background,
-      appBar: _buildAppBar(context, cs),
+      appBar: _buildAppBar(context, cs, l10n),
       floatingActionButton: PulsingFAB(onTap: _showAddDialog),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: _habits.isEmpty ? _buildEmpty(context) : _buildList(context),
+      body: _habits.isEmpty ? _buildEmpty(context, l10n) : _buildList(context),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext ctx, ColorScheme cs) {
+  PreferredSizeWidget _buildAppBar(BuildContext ctx, ColorScheme cs, AppLocalizations l10n) {
     return AppBar(
       backgroundColor: cs.background,
       elevation: 0,
@@ -404,7 +411,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "My Habits",
+            l10n.myHabits,
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
@@ -412,7 +419,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
             ),
           ),
           Text(
-            DateFormat("EEEE, d MMMM").format(DateTime.now()),
+            DateFormat("EEEE, d MMMM", Localizations.localeOf(ctx).toString())
+                .format(DateTime.now()),
             style: TextStyle(fontSize: 12, color: cs.onBackground.withOpacity(0.45)),
           ),
         ],
@@ -420,7 +428,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     );
   }
 
-  Widget _buildEmpty(BuildContext context) {
+  Widget _buildEmpty(BuildContext context, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -429,22 +437,17 @@ class _HabitsScreenState extends State<HabitsScreen> {
             padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Theme.of(context)
-                  .colorScheme
-                  .primary
-                  .withOpacity(0.08),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
             ),
             child: Icon(Icons.track_changes_rounded,
-                size: 56,
-                color: Theme.of(context).colorScheme.primary),
+                size: 56, color: Theme.of(context).colorScheme.primary),
           ),
           const SizedBox(height: 20),
-          const Text("No habits yet",
-              style:
-              TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          Text(l10n.noHabits,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           Text(
-            "Start building your routine today",
+            l10n.startBuilding,
             style: TextStyle(
                 fontSize: 13,
                 color: Theme.of(context)
@@ -456,7 +459,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           FilledButton.icon(
             onPressed: _showAddDialog,
             icon: const Icon(Icons.add),
-            label: const Text("Create your first habit"),
+            label: Text(l10n.createFirstHabit),
           ),
         ],
       ),
@@ -475,13 +478,14 @@ class _HabitsScreenState extends State<HabitsScreen> {
     final habit = _habits[idx];
     final color = _categoryColor(habit.category);
     final stats = _weekStats(habit);
-    final week  = _currentWeek();
+    final week = _currentWeek();
+    final l10n = AppLocalizations.of(context)!;
 
     return Dismissible(
       key: Key(habit.id),
       direction: DismissDirection.endToStart,
-      background: _swipeBackground(),
-      confirmDismiss: (_) => _confirmDismiss(context),
+      background: _swipeBackground(l10n),
+      confirmDismiss: (_) => _confirmDismiss(context, l10n),
       onDismissed: (_) async {
         await _repo.deleteHabit(habit.id);
         _load();
@@ -512,48 +516,45 @@ class _HabitsScreenState extends State<HabitsScreen> {
     );
   }
 
-  Widget _swipeBackground() => Container(
-    alignment: Alignment.centerRight,
-    padding: const EdgeInsets.only(right: 24),
-    margin: const EdgeInsets.only(bottom: 14),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [Colors.red.withOpacity(0), Colors.red.shade600],
-      ),
-      borderRadius: BorderRadius.circular(24),
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: const [
-        Icon(Icons.delete_outline_rounded,
-            color: Colors.white, size: 28),
-        SizedBox(height: 4),
-        Text("Delete",
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600)),
-      ],
-    ),
-  );
+  Widget _swipeBackground(AppLocalizations l10n) => Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.red.withOpacity(0), Colors.red.shade600],
+          ),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 28),
+            const SizedBox(height: 4),
+            Text(l10n.delete,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
 
-  Future<bool?> _confirmDismiss(BuildContext ctx) {
+  Future<bool?> _confirmDismiss(BuildContext ctx, AppLocalizations l10n) {
     return showDialog<bool>(
       context: ctx,
       builder: (_) => AlertDialog(
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text("Delete Habit"),
-        content: const Text(
-            "Are you sure you want to delete this habit?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(l10n.deleteHabit),
+        content: Text(l10n.deleteHabitConfirm),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text("Cancel")),
+              child: Text(l10n.cancel)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text("Delete"),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -608,15 +609,12 @@ class _HabitCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header Row ──────────────────
               Row(
                 children: [
-                  // Category dot + title
                   Container(
                     width: 10,
                     height: 10,
-                    decoration: BoxDecoration(
-                        color: color, shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -630,16 +628,14 @@ class _HabitCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Category chip
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Text(
-                      habit.category,
+                      _getTranslatedCategory(context, habit.category),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -649,43 +645,34 @@ class _HabitCard extends StatelessWidget {
                   ),
                 ],
               ),
-
               const SizedBox(height: 14),
-
-              // ── Week labels ─────────────────
               Row(
                 children: _kDayHeaders
                     .map(
                       (d) => Expanded(
-                    child: Center(
-                      child: Text(
-                        d,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: cs.onSurface.withOpacity(0.35),
-                          letterSpacing: 0.5,
+                        child: Center(
+                          child: Text(
+                            d,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurface.withOpacity(0.35),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                )
+                    )
                     .toList(),
               ),
-
               const SizedBox(height: 8),
-
-              // ── Week Row ────────────────────
               HabitWeekRow(
                 weekDates: weekDates,
                 dates: habit.completedDates,
                 activeWeekdays: habit.activeWeekdays,
                 onTap: onDayTap,
               ),
-
               const SizedBox(height: 14),
-
-              // ── Weekly progress bar ─────────
               _WeekProgressBar(
                 done: weekStats.done,
                 total: weekStats.total,
@@ -718,6 +705,7 @@ class _WeekProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -725,21 +713,15 @@ class _WeekProgressBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "This week",
+              l10n.thisWeek,
               style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.4)),
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
             ),
             Text(
-              "$done / $total days",
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: color),
+              "$done / $total ${l10n.days}",
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
             ),
           ],
         ),
@@ -774,6 +756,7 @@ class _OptionsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -785,7 +768,6 @@ class _OptionsSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle
             Container(
               width: 36,
               height: 4,
@@ -797,19 +779,19 @@ class _OptionsSheet extends StatelessWidget {
             ),
             _SheetTile(
               icon: Icons.bar_chart_rounded,
-              label: "View details",
+              label: l10n.viewDetails,
               color: cs.primary,
               onTap: onView,
             ),
             _SheetTile(
               icon: Icons.edit_rounded,
-              label: "Edit habit",
+              label: l10n.editHabit,
               color: Colors.orange,
               onTap: onEdit,
             ),
             _SheetTile(
               icon: Icons.delete_outline_rounded,
-              label: "Delete habit",
+              label: l10n.deleteHabit,
               color: Colors.red,
               onTap: onDelete,
             ),
@@ -845,9 +827,7 @@ class _SheetTile extends StatelessWidget {
         ),
         child: Icon(icon, color: color, size: 20),
       ),
-      title: Text(label,
-          style:
-          const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
       onTap: onTap,
     );
   }
@@ -871,8 +851,6 @@ class HabitDetailsScreen extends StatelessWidget {
     required this.yearlyAccuracy,
   });
 
-  // ── Helpers ────────────────────────────────
-
   List<double> _lastSixMonths() {
     final now = DateTime.now();
     return List.generate(6, (i) {
@@ -884,15 +862,14 @@ class HabitDetailsScreen extends StatelessWidget {
         if (!habit.activeWeekdays.contains(date.weekday)) continue;
         total++;
         if (habit.completedDates.any((c) =>
-        c.year == date.year &&
-            c.month == date.month &&
-            c.day == date.day)) done++;
+            c.year == date.year && c.month == date.month && c.day == date.day)) done++;
       }
       return total == 0 ? 0 : (done / total) * 100;
     });
   }
 
   void _showCalendar(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     DateTime current = DateTime.now();
     showModalBottomSheet(
       context: context,
@@ -912,7 +889,7 @@ class HabitDetailsScreen extends StatelessWidget {
               final date = DateTime(y, m, day);
               final active = habit.activeWeekdays.contains(date.weekday);
               final done = habit.completedDates.any((c) =>
-              c.year == y && c.month == m && c.day == day);
+                  c.year == y && c.month == m && c.day == day);
 
               Color bg;
               if (!active) {
@@ -932,9 +909,7 @@ class HabitDetailsScreen extends StatelessWidget {
                 child: Center(
                   child: Text("$day",
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600)),
+                          color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
                 ),
               );
             }),
@@ -950,49 +925,45 @@ class HabitDetailsScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                // Handle
                 Container(
-                  width: 36, height: 4,
+                  width: 36,
+                  height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
                     color: Colors.grey.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(100),
                   ),
                 ),
-                // Month nav
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.chevron_left_rounded),
-                      onPressed: () =>
-                          set(() => current = DateTime(y, m - 1)),
+                      onPressed: () => set(() => current = DateTime(y, m - 1)),
                     ),
                     Text(
-                      "${_kMonthNames[m - 1]} $y",
-                      style: const TextStyle(
-                          fontSize: 17, fontWeight: FontWeight.w700),
+                      DateFormat.yMMMM(Localizations.localeOf(context).toString())
+                          .format(current),
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
                     ),
                     IconButton(
                       icon: const Icon(Icons.chevron_right_rounded),
-                      onPressed: () =>
-                          set(() => current = DateTime(y, m + 1)),
+                      onPressed: () => set(() => current = DateTime(y, m + 1)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                // Day headers
                 Row(
-                  children: ["Su","Mo","Tu","We","Th","Fr","Sa"]
+                  children: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
                       .map((d) => Expanded(
-                    child: Center(
-                      child: Text(d,
-                          style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey)),
-                    ),
-                  ))
+                            child: Center(
+                              child: Text(d,
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey)),
+                            ),
+                          ))
                       .toList(),
                 ),
                 const SizedBox(height: 8),
@@ -1004,19 +975,15 @@ class HabitDetailsScreen extends StatelessWidget {
                     children: cells,
                   ),
                 ),
-                // Legend
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _LegendDot(color: Colors.green, label: "Done"),
+                    _LegendDot(color: Colors.green, label: l10n.done),
                     const SizedBox(width: 16),
-                    _LegendDot(
-                        color: Colors.red.withOpacity(0.5),
-                        label: "Missed"),
+                    _LegendDot(color: Colors.red.withOpacity(0.5), label: l10n.missed),
                     const SizedBox(width: 16),
-                    _LegendDot(
-                        color: Colors.grey.shade800, label: "Inactive"),
+                    _LegendDot(color: Colors.grey.shade800, label: l10n.inactive),
                   ],
                 ),
               ],
@@ -1027,22 +994,22 @@ class HabitDetailsScreen extends StatelessWidget {
     );
   }
 
-  // ── Build ──────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final color = _categoryColor(habit.category);
     final cs = Theme.of(context).colorScheme;
     final chartData = _lastSixMonths();
     final now = DateTime.now();
     final monthNames = List.generate(
-        6, (i) => DateFormat.MMM().format(DateTime(now.year, now.month - (5 - i))));
+        6,
+        (i) => DateFormat.MMM(Localizations.localeOf(context).toString())
+            .format(DateTime(now.year, now.month - (5 - i))));
 
     return Scaffold(
       backgroundColor: cs.background,
       body: CustomScrollView(
         slivers: [
-          // ── SliverAppBar ──────────────────
           SliverAppBar(
             expandedHeight: 180,
             pinned: true,
@@ -1053,14 +1020,11 @@ class HabitDetailsScreen extends StatelessWidget {
               title: Text(
                 habit.title,
                 style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white),
+                    fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
               ),
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // gradient
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -1073,7 +1037,6 @@ class HabitDetailsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // pattern overlay
                   Positioned(
                     right: -30,
                     top: -30,
@@ -1098,23 +1061,19 @@ class HabitDetailsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Category badge
                   Positioned(
                     top: 90,
                     left: 16,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Text(
-                        habit.category,
+                        _getTranslatedCategory(context, habit.category),
                         style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12),
+                            color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
                       ),
                     ),
                   ),
@@ -1122,21 +1081,16 @@ class HabitDetailsScreen extends StatelessWidget {
               ),
             ),
           ),
-
-          // ── Body content ──────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Stats grid
-                  _buildStatsGrid(color),
+                  _buildStatsGrid(context, color),
                   const SizedBox(height: 28),
-
-                  // Section header
                   _SectionHeader(
-                    title: "Last 6 Months",
+                    title: l10n.lastSixMonths,
                     trailing: _iconBtn(
                       context,
                       icon: Icons.calendar_month_rounded,
@@ -1144,12 +1098,8 @@ class HabitDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Bar chart
                   _buildChart(context, chartData, monthNames, color),
                   const SizedBox(height: 12),
-
-                  // Chart legend
                   Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1163,7 +1113,7 @@ class HabitDetailsScreen extends StatelessWidget {
                             )),
                         const SizedBox(width: 6),
                         Text(
-                          "Completion rate (%)",
+                          l10n.completionRate,
                           style: TextStyle(
                             fontSize: 12,
                             color: cs.onBackground.withOpacity(0.5),
@@ -1182,31 +1132,32 @@ class HabitDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsGrid(Color color) {
+  Widget _buildStatsGrid(BuildContext context, Color color) {
+    final l10n = AppLocalizations.of(context)!;
     final items = [
       (
-      title: "Current Streak",
-      value: "$currentStreak days",
-      icon: Icons.local_fire_department_rounded,
-      color: Colors.orange,
+        title: l10n.currentStreak,
+        value: "$currentStreak ${l10n.days}",
+        icon: Icons.local_fire_department_rounded,
+        color: Colors.orange,
       ),
       (
-      title: "Best Streak",
-      value: "$bestStreak days",
-      icon: Icons.emoji_events_rounded,
-      color: Colors.amber,
+        title: l10n.bestStreak,
+        value: "$bestStreak ${l10n.days}",
+        icon: Icons.emoji_events_rounded,
+        color: Colors.amber,
       ),
       (
-      title: "Monthly",
-      value: "${monthlyAccuracy.toStringAsFixed(0)}%",
-      icon: Icons.calendar_today_rounded,
-      color: Colors.green,
+        title: l10n.monthly,
+        value: "${monthlyAccuracy.toStringAsFixed(0)}%",
+        icon: Icons.calendar_today_rounded,
+        color: Colors.green,
       ),
       (
-      title: "Yearly",
-      value: "${yearlyAccuracy.toStringAsFixed(0)}%",
-      icon: Icons.trending_up_rounded,
-      color: Colors.blue,
+        title: l10n.yearly,
+        value: "${yearlyAccuracy.toStringAsFixed(0)}%",
+        icon: Icons.trending_up_rounded,
+        color: Colors.blue,
       ),
     ];
 
@@ -1219,21 +1170,21 @@ class HabitDetailsScreen extends StatelessWidget {
       childAspectRatio: 2,
       children: items
           .map((e) => _StatTile(
-        title: e.title,
-        value: e.value,
-        icon: e.icon,
-        color: e.color,
-      ))
+                title: e.title,
+                value: e.value,
+                icon: e.icon,
+                color: e.color,
+              ))
           .toList(),
     );
   }
 
   Widget _buildChart(
-      BuildContext context,
-      List<double> data,
-      List<String> labels,
-      Color color,
-      ) {
+    BuildContext context,
+    List<double> data,
+    List<String> labels,
+    Color color,
+  ) {
     return SizedBox(
       height: 220,
       child: BarChart(
@@ -1258,9 +1209,7 @@ class HabitDetailsScreen extends StatelessWidget {
                 reservedSize: 36,
                 getTitlesWidget: (v, _) => Text(
                   "${v.toInt()}%",
-                  style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey.withOpacity(0.6)),
+                  style: TextStyle(fontSize: 10, color: Colors.grey.withOpacity(0.6)),
                 ),
               ),
             ),
@@ -1283,10 +1232,8 @@ class HabitDetailsScreen extends StatelessWidget {
                 },
               ),
             ),
-            rightTitles: AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            topTitles:
-            AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           barGroups: data.asMap().entries.map((e) {
             final isLast = e.key == data.length - 1;
@@ -1296,17 +1243,16 @@ class HabitDetailsScreen extends StatelessWidget {
                 BarChartRodData(
                   toY: e.value,
                   width: 28,
-                  borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(8)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     colors: isLast
                         ? [color, color.withOpacity(0.85)]
                         : [
-                      color.withOpacity(0.35),
-                      color.withOpacity(0.55),
-                    ],
+                            color.withOpacity(0.35),
+                            color.withOpacity(0.55),
+                          ],
                   ),
                 ),
               ],
@@ -1317,8 +1263,7 @@ class HabitDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _iconBtn(BuildContext ctx,
-      {required IconData icon, required VoidCallback onTap}) {
+  Widget _iconBtn(BuildContext ctx, {required IconData icon, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1346,14 +1291,12 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Text(title,
-          style: const TextStyle(
-              fontSize: 17, fontWeight: FontWeight.w700)),
-      if (trailing != null) trailing!,
-    ],
-  );
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          if (trailing != null) trailing!,
+        ],
+      );
 }
 
 class _StatTile extends StatelessWidget {
@@ -1370,41 +1313,36 @@ class _StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding:
-    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.08),
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: color.withOpacity(0.15)),
-    ),
-    child: Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withOpacity(0.15)),
         ),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
-            Text(title,
-                style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w500)),
-            Text(value,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w800)),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 16),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(title,
+                    style: TextStyle(
+                        fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+                Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              ],
+            ),
           ],
         ),
-      ],
-    ),
-  );
+      );
 }
 
 class _LegendDot extends StatelessWidget {
@@ -1415,23 +1353,18 @@ class _LegendDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-          width: 10,
-          height: 10,
-          decoration:
-          BoxDecoration(color: color, shape: BoxShape.circle)),
-      const SizedBox(width: 5),
-      Text(label,
-          style: TextStyle(
-              fontSize: 11,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withOpacity(0.5))),
-    ],
-  );
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 5),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
+        ],
+      );
 }
 
 // ─────────────────────────────────────────────
@@ -1453,9 +1386,9 @@ class StatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => _StatTile(
-    title: title,
-    value: value,
-    icon: icon,
-    color: color,
-  );
+        title: title,
+        value: value,
+        icon: icon,
+        color: color,
+      );
 }

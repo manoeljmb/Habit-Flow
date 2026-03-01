@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:habitflow/l10n/app_localizations.dart';
 import '../../../tasks/data/task_repository.dart';
 import '../../../tasks/data/task_datasource.dart';
 import 'package:habitflow/features/tasks/domain/task.dart';
@@ -33,37 +34,59 @@ class _HomeScreenState extends State<HomeScreen>
   List<Task> _tasks = [];
   int? _pressedIndex;
 
-  // ── Lifecycle ──────────────────────────────
-
   @override
   void initState() {
     super.initState();
     _load();
   }
 
-  // ── Data helpers ───────────────────────────
-
   void _load() {
     setState(() => _tasks = _repo.getTasks());
   }
 
   List<Task> get _tasksForDate => _tasks.where((t) {
-    return t.date.year == _selectedDate.year &&
-        t.date.month == _selectedDate.month &&
-        t.date.day == _selectedDate.day;
-  }).toList();
+        return t.date.year == _selectedDate.year &&
+            t.date.month == _selectedDate.month &&
+            t.date.day == _selectedDate.day;
+      }).toList();
 
   Color _colorOf(String category) {
     final match = taskCategories.firstWhere(
-          (c) => c.name == category,
+      (c) => c.name == category,
       orElse: () => taskCategories.first,
     );
     return match.color;
   }
 
+  String _getTranslatedCategory(BuildContext context, String category) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (category) {
+      case "General": return l10n.general;
+      case "Work": return l10n.work;
+      case "Study": return l10n.study;
+      case "Health": return l10n.health;
+      case "Fitness": return l10n.fitness;
+      case "Finance": return l10n.finance;
+      case "Family": return l10n.family;
+      case "Spiritual": return l10n.spiritual;
+      case "Projects": return l10n.projects;
+      case "Reading": return l10n.reading;
+      case "Business": return l10n.business;
+      case "Personal": return l10n.personal;
+      case "Travel": return l10n.travel;
+      case "Learning": return l10n.learning;
+      case "Coding": return l10n.coding;
+      case "Creative": return l10n.creative;
+      case "Social": return l10n.social;
+      case "Mindset": return l10n.mindset;
+      default: return category;
+    }
+  }
+
   // ── Task dialog ────────────────────────────
 
   void _showTaskDialog({Task? existing}) {
+    final l10n = AppLocalizations.of(context)!;
     final ctrl = TextEditingController(text: existing?.title ?? '');
     String cat = existing?.category ?? taskCategories.first.name;
     DateTime date = existing?.date ?? _selectedDate;
@@ -72,10 +95,9 @@ class _HomeScreenState extends State<HomeScreen>
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (ctx, set) => AlertDialog(
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Text(
-            existing == null ? "New Task" : "Edit Task",
+            existing == null ? l10n.newTask : l10n.editTask,
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           content: SingleChildScrollView(
@@ -83,15 +105,13 @@ class _HomeScreenState extends State<HomeScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title
                 TextField(
                   controller: ctrl,
                   autofocus: true,
                   decoration: InputDecoration(
-                    hintText: "Task name",
+                    hintText: l10n.taskName,
                     filled: true,
-                    fillColor:
-                    Theme.of(ctx).colorScheme.surfaceVariant,
+                    fillColor: Theme.of(ctx).colorScheme.surfaceVariant,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -100,11 +120,8 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Category
-                const Text("Category",
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(l10n.category,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: cat,
@@ -115,38 +132,35 @@ class _HomeScreenState extends State<HomeScreen>
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
                   items: taskCategories
                       .map(
                         (c) => DropdownMenuItem(
-                      value: c.name,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            margin: const EdgeInsets.only(right: 10),
-                            decoration: BoxDecoration(
-                              color: c.color,
-                              shape: BoxShape.circle,
-                            ),
+                          value: c.name,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                margin: const EdgeInsets.only(right: 10),
+                                decoration: BoxDecoration(
+                                  color: c.color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              Text(_getTranslatedCategory(context, c.name)),
+                            ],
                           ),
-                          Text(c.name),
-                        ],
-                      ),
-                    ),
-                  )
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) => set(() => cat = v!),
                 ),
                 const SizedBox(height: 16),
-
-                // Date
-                const Text("Date",
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(l10n.date,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () async {
@@ -159,8 +173,7 @@ class _HomeScreenState extends State<HomeScreen>
                     if (picked != null) set(() => date = picked);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 13),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                     decoration: BoxDecoration(
                       color: Theme.of(ctx).colorScheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(14),
@@ -169,15 +182,12 @@ class _HomeScreenState extends State<HomeScreen>
                       children: [
                         Icon(Icons.calendar_today_rounded,
                             size: 18,
-                            color: Theme.of(ctx)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.5)),
+                            color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.5)),
                         const SizedBox(width: 10),
                         Text(
-                          DateFormat("EEE, d MMM yyyy").format(date),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600),
+                          DateFormat("EEE, d MMM yyyy", Localizations.localeOf(context).toString())
+                              .format(date),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -189,21 +199,19 @@ class _HomeScreenState extends State<HomeScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: () async {
                 if (ctrl.text.trim().isEmpty) return;
                 final t = (existing ??
-                    Task(
-                      id: DateTime.now()
-                          .millisecondsSinceEpoch
-                          .toString(),
-                      title: '',
-                      date: date,
-                      isDone: false,
-                      category: cat,
-                    ))
+                        Task(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          title: '',
+                          date: date,
+                          isDone: false,
+                          category: cat,
+                        ))
                     .copyWith(
                   title: ctrl.text.trim(),
                   category: cat,
@@ -213,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen>
                 _load();
                 Navigator.pop(context);
               },
-              child: Text(existing == null ? "Create" : "Save"),
+              child: Text(existing == null ? l10n.create : l10n.save),
             ),
           ],
         ),
@@ -247,64 +255,55 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Handle
                 Container(
-                  width: 36, height: 4,
+                  width: 36,
+                  height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
                     color: cs.onSurface.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(100),
                   ),
                 ),
-
-                // Month nav
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _CalNavBtn(
                       icon: Icons.chevron_left_rounded,
-                      onTap: () => set(() =>
-                      temp = DateTime(y, m - 1)),
+                      onTap: () => set(() => temp = DateTime(y, m - 1)),
                     ),
                     Text(
-                      DateFormat('MMMM yyyy').format(temp),
-                      style: const TextStyle(
-                          fontSize: 17, fontWeight: FontWeight.w700),
+                      DateFormat('MMMM yyyy', Localizations.localeOf(context).toString())
+                          .format(temp),
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
                     ),
                     _CalNavBtn(
                       icon: Icons.chevron_right_rounded,
-                      onTap: () => set(() =>
-                      temp = DateTime(y, m + 1)),
+                      onTap: () => set(() => temp = DateTime(y, m + 1)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // Weekday headers
                 Row(
-                  children: ["Su","Mo","Tu","We","Th","Fr","Sa"]
+                  children: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
                       .map((d) => Expanded(
-                    child: Center(
-                      child: Text(d,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: cs.onSurface.withOpacity(0.35),
-                          )),
-                    ),
-                  ))
+                            child: Center(
+                              child: Text(d,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: cs.onSurface.withOpacity(0.35),
+                                  )),
+                            ),
+                          ))
                       .toList(),
                 ),
                 const SizedBox(height: 8),
-
-                // Day grid
                 SizedBox(
                   height: 280,
                   child: GridView.builder(
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: firstWD + totalDays,
-                    gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 7,
                       mainAxisSpacing: 4,
                       crossAxisSpacing: 4,
@@ -320,9 +319,7 @@ class _HomeScreenState extends State<HomeScreen>
                           date.month == DateTime.now().month &&
                           date.day == DateTime.now().day;
                       final hasTasks = _tasks.any((t) =>
-                      t.date.year == y &&
-                          t.date.month == m &&
-                          t.date.day == day);
+                          t.date.year == y && t.date.month == m && t.date.day == day);
 
                       return GestureDetector(
                         onTap: () {
@@ -334,8 +331,8 @@ class _HomeScreenState extends State<HomeScreen>
                             color: isSelected
                                 ? cs.primary
                                 : isToday
-                                ? cs.primary.withOpacity(0.12)
-                                : Colors.transparent,
+                                    ? cs.primary.withOpacity(0.12)
+                                    : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Stack(
@@ -345,12 +342,9 @@ class _HomeScreenState extends State<HomeScreen>
                                 "$day",
                                 style: TextStyle(
                                   fontSize: 13,
-                                  fontWeight: isSelected || isToday
-                                      ? FontWeight.w700
-                                      : FontWeight.w400,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : cs.onSurface,
+                                  fontWeight:
+                                      isSelected || isToday ? FontWeight.w700 : FontWeight.w400,
+                                  color: isSelected ? Colors.white : cs.onSurface,
                                 ),
                               ),
                               if (hasTasks && !isSelected)
@@ -390,13 +384,15 @@ class _HomeScreenState extends State<HomeScreen>
     final done = filtered.where((t) => t.isDone).length;
     double progress = 0.0;
 
-    if (filtered.isNotEmpty && filtered.length > 0) {
+    if (filtered.isNotEmpty) {
       progress = done / filtered.length;
     }
 
     if (progress.isNaN || progress.isInfinite) {
       progress = 0.0;
-    }    final isToday = DateUtils.isSameDay(_selectedDate, DateTime.now());
+    }
+    final isToday = DateUtils.isSameDay(_selectedDate, DateTime.now());
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -405,11 +401,11 @@ class _HomeScreenState extends State<HomeScreen>
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: Column(
         children: [
-          _buildHeader(context, cs, isDark, filtered, done, progress, isToday),
+          _buildHeader(context, cs, isDark, filtered, done, progress, isToday, l10n),
           Expanded(
             child: filtered.isEmpty
-                ? _buildEmpty(context, isToday)
-                : _buildTaskList(context, filtered),
+                ? _buildEmpty(context, isToday, l10n)
+                : _buildTaskList(context, filtered, l10n),
           ),
         ],
       ),
@@ -419,14 +415,15 @@ class _HomeScreenState extends State<HomeScreen>
   // ── Header ─────────────────────────────────
 
   Widget _buildHeader(
-      BuildContext context,
-      ColorScheme cs,
-      bool isDark,
-      List<Task> filtered,
-      int done,
-      double progress,
-      bool isToday,
-      ) {
+    BuildContext context,
+    ColorScheme cs,
+    bool isDark,
+    List<Task> filtered,
+    int done,
+    double progress,
+    bool isToday,
+    AppLocalizations l10n,
+  ) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 56, 24, 20),
       decoration: BoxDecoration(
@@ -442,7 +439,6 @@ class _HomeScreenState extends State<HomeScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Row 1: Title + Theme toggle ───
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -451,7 +447,10 @@ class _HomeScreenState extends State<HomeScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isToday ? "Today" : DateFormat("EEEE").format(_selectedDate),
+                      isToday
+                          ? l10n.today
+                          : DateFormat("EEEE", Localizations.localeOf(context).toString())
+                              .format(_selectedDate),
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
@@ -466,11 +465,11 @@ class _HomeScreenState extends State<HomeScreen>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.calendar_today_rounded,
-                              size: 13,
-                              color: cs.onSurface.withOpacity(0.4)),
+                              size: 13, color: cs.onSurface.withOpacity(0.4)),
                           const SizedBox(width: 5),
                           Text(
-                            DateFormat("d MMMM yyyy").format(_selectedDate),
+                            DateFormat("d MMMM yyyy", Localizations.localeOf(context).toString())
+                                .format(_selectedDate),
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -479,16 +478,13 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                           const SizedBox(width: 4),
                           Icon(Icons.keyboard_arrow_down_rounded,
-                              size: 16,
-                              color: cs.onSurface.withOpacity(0.3)),
+                              size: 16, color: cs.onSurface.withOpacity(0.3)),
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
-
-              // Progress ring + theme toggle
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -506,7 +502,6 @@ class _HomeScreenState extends State<HomeScreen>
                             size: 48,
                             strokeWidth: 4,
                           ),
-
                         ],
                       ),
                     ),
@@ -514,35 +509,29 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ],
           ),
-
           const SizedBox(height: 20),
-
-          // ── Row 2: Date nav ───────────────
           Row(
             children: [
               _NavButton(
                 icon: Icons.chevron_left_rounded,
-                onTap: () => setState(() => _selectedDate =
-                    _selectedDate.subtract(const Duration(days: 1))),
+                onTap: () => setState(
+                    () => _selectedDate = _selectedDate.subtract(const Duration(days: 1))),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _TodayButton(
                   isToday: isToday,
-                  onTap: () =>
-                      setState(() => _selectedDate = DateTime.now()),
+                  onTap: () => setState(() => _selectedDate = DateTime.now()),
                 ),
               ),
               const SizedBox(width: 10),
               _NavButton(
                 icon: Icons.chevron_right_rounded,
-                onTap: () => setState(() => _selectedDate =
-                    _selectedDate.add(const Duration(days: 1))),
+                onTap: () =>
+                    setState(() => _selectedDate = _selectedDate.add(const Duration(days: 1))),
               ),
             ],
           ),
-
-          // ── Row 3: Progress bar ───────────
           if (filtered.isNotEmpty) ...[
             const SizedBox(height: 16),
             _DailyProgressBar(
@@ -558,7 +547,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   // ── Empty state ────────────────────────────
 
-  Widget _buildEmpty(BuildContext context, bool isToday) {
+  Widget _buildEmpty(BuildContext context, bool isToday, AppLocalizations l10n) {
     final cs = Theme.of(context).colorScheme;
     return Center(
       child: Column(
@@ -570,30 +559,24 @@ class _HomeScreenState extends State<HomeScreen>
               shape: BoxShape.circle,
               color: cs.primary.withOpacity(0.07),
             ),
-            child: Icon(Icons.task_alt_rounded,
-                size: 52, color: cs.primary.withOpacity(0.6)),
+            child: Icon(Icons.task_alt_rounded, size: 52, color: cs.primary.withOpacity(0.6)),
           ),
           const SizedBox(height: 20),
           Text(
-            isToday ? "No tasks for today" : "No tasks for this day",
-            style: const TextStyle(
-                fontSize: 17, fontWeight: FontWeight.w700),
+            isToday ? l10n.noTasks : l10n.noTasksDay,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
-            isToday
-                ? "Tap + to add your first task"
-                : "Nothing planned here yet",
-            style: TextStyle(
-                fontSize: 13,
-                color: cs.onBackground.withOpacity(0.4)),
+            isToday ? l10n.tapToAddFirst : l10n.nothingPlanned,
+            style: TextStyle(fontSize: 13, color: cs.onBackground.withOpacity(0.4)),
           ),
           if (isToday) ...[
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () => _showTaskDialog(),
               icon: const Icon(Icons.add),
-              label: const Text("Add task"),
+              label: Text(l10n.addTask),
             ),
           ],
         ],
@@ -603,7 +586,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   // ── Task list ──────────────────────────────
 
-  Widget _buildTaskList(BuildContext context, List<Task> tasks) {
+  Widget _buildTaskList(BuildContext context, List<Task> tasks, AppLocalizations l10n) {
     final pending = tasks.where((t) => !t.isDone).toList();
     final completed = tasks.where((t) => t.isDone).toList();
 
@@ -612,34 +595,38 @@ class _HomeScreenState extends State<HomeScreen>
       children: [
         if (pending.isNotEmpty) ...[
           _SectionLabel(
-            label: "Pending",
+            label: l10n.pending,
             count: pending.length,
             color: Theme.of(context).colorScheme.primary,
           ),
-          ...pending.asMap().entries.map((e) => _buildTaskTile(
-              context, e.value, tasks.indexOf(e.value))),
+          ...pending
+              .asMap()
+              .entries
+              .map((e) => _buildTaskTile(context, e.value, tasks.indexOf(e.value), l10n)),
         ],
         if (completed.isNotEmpty) ...[
           const SizedBox(height: 8),
           _SectionLabel(
-            label: "Completed",
+            label: l10n.completed,
             count: completed.length,
             color: Colors.green,
           ),
-          ...completed.asMap().entries.map((e) => _buildTaskTile(
-              context, e.value, tasks.indexOf(e.value))),
+          ...completed
+              .asMap()
+              .entries
+              .map((e) => _buildTaskTile(context, e.value, tasks.indexOf(e.value), l10n)),
         ],
       ],
     );
   }
 
-  Widget _buildTaskTile(BuildContext context, Task task, int idx) {
+  Widget _buildTaskTile(BuildContext context, Task task, int idx, AppLocalizations l10n) {
     final color = _colorOf(task.category);
 
     return Dismissible(
       key: Key(task.id),
       direction: DismissDirection.endToStart,
-      background: _SwipeBackground(),
+      background: _SwipeBackground(l10n: l10n),
       confirmDismiss: (_) async {
         HapticFeedback.mediumImpact();
         return true;
@@ -658,6 +645,7 @@ class _HomeScreenState extends State<HomeScreen>
           child: _TaskCard(
             task: task,
             color: color,
+            categoryLabel: _getTranslatedCategory(context, task.category),
             onToggle: () async {
               await _repo.addTask(task.copyWith(isDone: !task.isDone));
               _load();
@@ -676,11 +664,13 @@ class _HomeScreenState extends State<HomeScreen>
 class _TaskCard extends StatelessWidget {
   final Task task;
   final Color color;
+  final String categoryLabel;
   final VoidCallback onToggle;
 
   const _TaskCard({
     required this.task,
     required this.color,
+    required this.categoryLabel,
     required this.onToggle,
   });
 
@@ -693,29 +683,24 @@ class _TaskCard extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: done
-            ? cs.surface.withOpacity(0.5)
-            : cs.surface,
+        color: done ? cs.surface.withOpacity(0.5) : cs.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: done
-              ? cs.onSurface.withOpacity(0.06)
-              : color.withOpacity(0.2),
+          color: done ? cs.onSurface.withOpacity(0.06) : color.withOpacity(0.2),
           width: 1.2,
         ),
         boxShadow: done
             ? []
             : [
-          BoxShadow(
-            color: color.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+                BoxShadow(
+                  color: color.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Row(
         children: [
-          // Color accent bar
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             width: 3,
@@ -726,8 +711,6 @@ class _TaskCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-
-          // Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -737,11 +720,8 @@ class _TaskCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: done
-                        ? cs.onSurface.withOpacity(0.35)
-                        : cs.onSurface,
-                    decoration:
-                    done ? TextDecoration.lineThrough : null,
+                    color: done ? cs.onSurface.withOpacity(0.35) : cs.onSurface,
+                    decoration: done ? TextDecoration.lineThrough : null,
                     decorationColor: cs.onSurface.withOpacity(0.35),
                   ),
                 ),
@@ -752,21 +732,17 @@ class _TaskCard extends StatelessWidget {
                       width: 7,
                       height: 7,
                       decoration: BoxDecoration(
-                        color: done
-                            ? cs.onSurface.withOpacity(0.2)
-                            : color,
+                        color: done ? cs.onSurface.withOpacity(0.2) : color,
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      task.category,
+                      categoryLabel,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: done
-                            ? cs.onSurface.withOpacity(0.3)
-                            : color,
+                        color: done ? cs.onSurface.withOpacity(0.3) : color,
                       ),
                     ),
                   ],
@@ -774,8 +750,6 @@ class _TaskCard extends StatelessWidget {
               ],
             ),
           ),
-
-          // Checkbox
           GestureDetector(
             onTap: onToggle,
             child: AnimatedContainer(
@@ -786,16 +760,11 @@ class _TaskCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: done ? color : Colors.transparent,
                 border: Border.all(
-                  color: done
-                      ? color
-                      : cs.onSurface.withOpacity(0.2),
+                  color: done ? color : cs.onSurface.withOpacity(0.2),
                   width: 2,
                 ),
               ),
-              child: done
-                  ? const Icon(Icons.check_rounded,
-                  color: Colors.white, size: 16)
-                  : null,
+              child: done ? const Icon(Icons.check_rounded, color: Colors.white, size: 16) : null,
             ),
           ),
         ],
@@ -821,6 +790,7 @@ class _DailyProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final pct = (progress * 100).toStringAsFixed(0);
 
     return Column(
@@ -830,7 +800,7 @@ class _DailyProgressBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "$done of $total tasks done",
+              "$done ${l10n.ofTotal} $total ${l10n.tasksDone}",
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -896,8 +866,7 @@ class _SectionLabel extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Container(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(30),
@@ -922,30 +891,29 @@ class _SectionLabel extends StatelessWidget {
 // ─────────────────────────────────────────────
 
 class _SwipeBackground extends StatelessWidget {
+  final AppLocalizations l10n;
+  const _SwipeBackground({required this.l10n});
+
   @override
   Widget build(BuildContext context) => Container(
-    alignment: Alignment.centerRight,
-    padding: const EdgeInsets.only(right: 24),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [Colors.red.withOpacity(0), Colors.red.shade600],
-      ),
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: const [
-        Icon(Icons.delete_outline_rounded,
-            color: Colors.white, size: 26),
-        SizedBox(height: 3),
-        Text("Delete",
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w700)),
-      ],
-    ),
-  );
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.red.withOpacity(0), Colors.red.shade600],
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 26),
+            const SizedBox(height: 3),
+            Text(l10n.delete,
+                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+          ],
+        ),
+      );
 }
 
 // ─────────────────────────────────────────────
@@ -998,7 +966,10 @@ class _NavButtonState extends State<_NavButton> {
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
         scale: _pressed ? 0.92 : 1.0,
@@ -1010,8 +981,7 @@ class _NavButtonState extends State<_NavButton> {
           decoration: BoxDecoration(
             color: cs.surfaceVariant,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-                color: cs.onSurface.withOpacity(0.07)),
+            border: Border.all(color: cs.onSurface.withOpacity(0.07)),
           ),
           child: Icon(widget.icon, size: 22, color: cs.onSurface),
         ),
@@ -1040,9 +1010,13 @@ class _TodayButtonState extends State<_TodayButton> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
         scale: _pressed ? 0.95 : 1.0,
@@ -1052,19 +1026,15 @@ class _TodayButtonState extends State<_TodayButton> {
           duration: const Duration(milliseconds: 250),
           height: 44,
           decoration: BoxDecoration(
-            color: widget.isToday
-                ? cs.primary.withOpacity(0.12)
-                : cs.surfaceVariant,
+            color: widget.isToday ? cs.primary.withOpacity(0.12) : cs.surfaceVariant,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: widget.isToday
-                  ? cs.primary.withOpacity(0.3)
-                  : cs.onSurface.withOpacity(0.07),
+              color: widget.isToday ? cs.primary.withOpacity(0.3) : cs.onSurface.withOpacity(0.07),
             ),
           ),
           child: Center(
             child: Text(
-              "Today",
+              l10n.today,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
@@ -1092,8 +1062,7 @@ class _ThemeToggle extends StatelessWidget {
     final isDark = controller.themeMode == ThemeMode.dark;
 
     return GestureDetector(
-      onTap: () => controller.setTheme(
-          isDark ? ThemeMode.light : ThemeMode.dark),
+      onTap: () => controller.setTheme(isDark ? ThemeMode.light : ThemeMode.dark),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 350),
         curve: Curves.easeInOutCubic,
@@ -1102,27 +1071,21 @@ class _ThemeToggle extends StatelessWidget {
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
-          color: isDark
-              ? const Color(0xFF2C2C2E)
-              : const Color(0xFF6FCF97),
+          color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF6FCF97),
           border: Border.all(
-            color: isDark
-                ? Colors.white.withOpacity(0.1)
-                : Colors.transparent,
+            color: isDark ? Colors.white.withOpacity(0.1) : Colors.transparent,
           ),
         ),
         child: Stack(
           children: [
-            // Icons
             Positioned(
               left: 2,
               top: 0,
               bottom: 0,
               child: Icon(Icons.dark_mode_rounded,
                   size: 14,
-                  color: isDark
-                      ? Colors.white.withOpacity(0.6)
-                      : Colors.white.withOpacity(0.3)),
+                  color:
+                      isDark ? Colors.white.withOpacity(0.6) : Colors.white.withOpacity(0.3)),
             ),
             Positioned(
               right: 2,
@@ -1130,16 +1093,13 @@ class _ThemeToggle extends StatelessWidget {
               bottom: 0,
               child: Icon(Icons.light_mode_rounded,
                   size: 14,
-                  color: isDark
-                      ? Colors.white.withOpacity(0.3)
-                      : Colors.white.withOpacity(0.8)),
+                  color:
+                      isDark ? Colors.white.withOpacity(0.3) : Colors.white.withOpacity(0.8)),
             ),
-            // Thumb
             AnimatedAlign(
               duration: const Duration(milliseconds: 350),
               curve: Curves.easeInOutCubic,
-              alignment:
-              isDark ? Alignment.centerLeft : Alignment.centerRight,
+              alignment: isDark ? Alignment.centerLeft : Alignment.centerRight,
               child: Container(
                 width: 24,
                 height: 24,
