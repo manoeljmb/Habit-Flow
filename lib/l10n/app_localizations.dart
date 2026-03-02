@@ -515,6 +515,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Social'**
   String get social;
+
+  /// No description provided for @time.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get time;
+
+  /// No description provided for @enableNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Notification'**
+  String get enableNotification;
+
+  /// No description provided for @reminderTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get reminderTime;
+
+  /// No description provided for @minBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'minutes before'**
+  String get minBefore;
+
+  /// No description provided for @exactTime.
+  ///
+  /// In en, this message translates to:
+  /// **'At exact time'**
+  String get exactTime;
+
+  /// No description provided for @notificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task Reminder'**
+  String get notificationTitle;
+
+  /// No description provided for @notificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your task is about to start!'**
+  String get notificationBody;
+
+  /// No description provided for @rateAppTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enjoying HabitFlow?'**
+  String get rateAppTitle;
+
+  /// No description provided for @rateAppMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rating helps us improve!'**
+  String get rateAppMessage;
+
+  /// No description provided for @rateNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate now'**
+  String get rateNow;
+
+  /// No description provided for @rateLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get rateLater;
 }
 
 class _AppLocalizationsDelegate

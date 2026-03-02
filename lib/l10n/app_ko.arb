@@ -66,5 +66,16 @@
   "learning": "학습",
   "coding": "코딩",
   "creative": "창의",
-  "social": "사교"
+  "social": "사교",
+  "time": "시간",
+  "enableNotification": "알림 활성화",
+  "reminderTime": "미리 알림",
+  "minBefore": "분 전",
+  "exactTime": "정각에",
+  "notificationTitle": "할 일 알림",
+  "notificationBody": "할 일이 곧 시작됩니다!",
+  "rateAppTitle": "HabitFlow가 마음에 드시나요?",
+  "rateAppMessage": "여러분의 소중한 평점은 앱 개선에 큰 도움이 됩니다!",
+  "rateNow": "지금 평가하기",
+  "rateLater": "나중에"
 }

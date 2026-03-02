@@ -6,11 +6,19 @@ import 'package:habitflow/features/habits/presentation/screens/home_screen.dart'
 import 'package:habitflow/features/habits/presentation/screens/habits_screen.dart';
 import 'package:habitflow/features/habits/domain/habit.dart';
 import 'package:habitflow/features/tasks/domain/task.dart';
+import 'package:habitflow/core/services/notification_service.dart';
+import 'package:habitflow/core/services/rate_service.dart';
 import 'core/theme/theme_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
+
+  // Inicializa notificações
+  await NotificationService().init();
+  
+  // Inicializa serviço de avaliação (Play Store)
+  await RateService().init();
 
   if (!Hive.isAdapterRegistered(0)) {
     Hive.registerAdapter(HabitAdapter());

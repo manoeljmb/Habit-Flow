@@ -211,4 +211,37 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get social => 'ソーシャル';
+
+  @override
+  String get time => '時間';
+
+  @override
+  String get enableNotification => '通知を有効にする';
+
+  @override
+  String get reminderTime => 'リマインダー';
+
+  @override
+  String get minBefore => '分前';
+
+  @override
+  String get exactTime => '予定時間通り';
+
+  @override
+  String get notificationTitle => 'タスクのリマインダー';
+
+  @override
+  String get notificationBody => 'タスクがまもなく始まります！';
+
+  @override
+  String get rateAppTitle => 'HabitFlowはいかがですか？';
+
+  @override
+  String get rateAppMessage => '評価をいただけると改善の励みになります！';
+
+  @override
+  String get rateNow => '今すぐ評価する';
+
+  @override
+  String get rateLater => '後で';
 }

@@ -2,7 +2,7 @@ name: habitflow
 description: "HabitFlow is a modern habit tracker and productivity planner built with Flutter."
 publish_to: 'none'
 
-version: 1.0.4+5
+version: 1.0.5+6
 
 environment:
   sdk: ^3.11.0
@@ -12,6 +12,9 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.4
+  shared_preferences: ^2.2.2
 
   intl: ^0.20.2
   hive: ^2.2.3

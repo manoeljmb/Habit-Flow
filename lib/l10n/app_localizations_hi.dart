@@ -212,4 +212,38 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get social => 'सामाजिक';
+
+  @override
+  String get time => 'समय';
+
+  @override
+  String get enableNotification => 'अधिसूचना सक्षम करें';
+
+  @override
+  String get reminderTime => 'अनुस्मारक';
+
+  @override
+  String get minBefore => 'मिनट पहले';
+
+  @override
+  String get exactTime => 'सटीक समय पर';
+
+  @override
+  String get notificationTitle => 'कार्य अनुस्मारक';
+
+  @override
+  String get notificationBody => 'आपका कार्य शुरू होने वाला है!';
+
+  @override
+  String get rateAppTitle => 'क्या आपको HabitFlow पसंद है?';
+
+  @override
+  String get rateAppMessage =>
+      'आपकी रेटिंग हमें बेहतर बनाने में बहुत मदद करती है!';
+
+  @override
+  String get rateNow => 'अभी रेट करें';
+
+  @override
+  String get rateLater => 'बाद में';
 }

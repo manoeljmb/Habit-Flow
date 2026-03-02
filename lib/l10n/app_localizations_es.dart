@@ -212,4 +212,37 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get social => 'Social';
+
+  @override
+  String get time => 'Hora';
+
+  @override
+  String get enableNotification => 'Activar Notificación';
+
+  @override
+  String get reminderTime => 'Recordatorio';
+
+  @override
+  String get minBefore => 'minutos antes';
+
+  @override
+  String get exactTime => 'A la hora exacta';
+
+  @override
+  String get notificationTitle => 'Recordatorio de Tarea';
+
+  @override
+  String get notificationBody => '¡Tu tarea está a punto de comenzar!';
+
+  @override
+  String get rateAppTitle => '¿Te gusta HabitFlow?';
+
+  @override
+  String get rateAppMessage => '¡Tu valoración nos ayuda mucho a mejorar!';
+
+  @override
+  String get rateNow => 'Valorar ahora';
+
+  @override
+  String get rateLater => 'Más tarde';
 }

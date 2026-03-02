@@ -66,5 +66,16 @@
   "learning": "学習",
   "coding": "コーディング",
   "creative": "クリエイティブ",
-  "social": "ソーシャル"
+  "social": "ソーシャル",
+  "time": "時間",
+  "enableNotification": "通知を有効にする",
+  "reminderTime": "リマインダー",
+  "minBefore": "分前",
+  "exactTime": "予定時間通り",
+  "notificationTitle": "タスクのリマインダー",
+  "notificationBody": "タスクがまもなく始まります！",
+  "rateAppTitle": "HabitFlowはいかがですか？",
+  "rateAppMessage": "評価をいただけると改善の励みになります！",
+  "rateNow": "今すぐ評価する",
+  "rateLater": "後で"
 }

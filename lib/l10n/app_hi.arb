@@ -66,5 +66,16 @@
   "learning": "सीखना",
   "coding": "कोडिंग",
   "creative": "रचनात्मक",
-  "social": "सामाजिक"
+  "social": "सामाजिक",
+  "time": "समय",
+  "enableNotification": "अधिसूचना सक्षम करें",
+  "reminderTime": "अनुस्मारक",
+  "minBefore": "मिनट पहले",
+  "exactTime": "सटीक समय पर",
+  "notificationTitle": "कार्य अनुस्मारक",
+  "notificationBody": "आपका कार्य शुरू होने वाला है!",
+  "rateAppTitle": "क्या आपको HabitFlow पसंद है?",
+  "rateAppMessage": "आपकी रेटिंग हमें बेहतर बनाने में बहुत मदद करती है!",
+  "rateNow": "अभी रेट करें",
+  "rateLater": "बाद में"
 }

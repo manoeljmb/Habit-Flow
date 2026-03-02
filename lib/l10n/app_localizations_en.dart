@@ -212,4 +212,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get social => 'Social';
+
+  @override
+  String get time => 'Time';
+
+  @override
+  String get enableNotification => 'Enable Notification';
+
+  @override
+  String get reminderTime => 'Reminder';
+
+  @override
+  String get minBefore => 'minutes before';
+
+  @override
+  String get exactTime => 'At exact time';
+
+  @override
+  String get notificationTitle => 'Task Reminder';
+
+  @override
+  String get notificationBody => 'Your task is about to start!';
+
+  @override
+  String get rateAppTitle => 'Enjoying HabitFlow?';
+
+  @override
+  String get rateAppMessage => 'Your rating helps us improve!';
+
+  @override
+  String get rateNow => 'Rate now';
+
+  @override
+  String get rateLater => 'Later';
 }

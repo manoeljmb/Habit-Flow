@@ -211,4 +211,37 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get social => '사교';
+
+  @override
+  String get time => '시간';
+
+  @override
+  String get enableNotification => '알림 활성화';
+
+  @override
+  String get reminderTime => '미리 알림';
+
+  @override
+  String get minBefore => '분 전';
+
+  @override
+  String get exactTime => '정각에';
+
+  @override
+  String get notificationTitle => '할 일 알림';
+
+  @override
+  String get notificationBody => '할 일이 곧 시작됩니다!';
+
+  @override
+  String get rateAppTitle => 'HabitFlow가 마음에 드시나요?';
+
+  @override
+  String get rateAppMessage => '여러분의 소중한 평점은 앱 개선에 큰 도움이 됩니다!';
+
+  @override
+  String get rateNow => '지금 평가하기';
+
+  @override
+  String get rateLater => '나중에';
 }

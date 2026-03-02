@@ -66,5 +66,16 @@
   "learning": "Learning",
   "coding": "Coding",
   "creative": "Creative",
-  "social": "Social"
+  "social": "Social",
+  "time": "Time",
+  "enableNotification": "Enable Notification",
+  "reminderTime": "Reminder",
+  "minBefore": "minutes before",
+  "exactTime": "At exact time",
+  "notificationTitle": "Task Reminder",
+  "notificationBody": "Your task is about to start!",
+  "rateAppTitle": "Enjoying HabitFlow?",
+  "rateAppMessage": "Your rating helps us improve!",
+  "rateNow": "Rate now",
+  "rateLater": "Later"
 }

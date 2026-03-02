@@ -9,6 +9,7 @@ import 'package:habitflow/core/constants/task_categories.dart';
 import 'package:habitflow/widgets/progress_ring.dart';
 import '/../widgets/pulsing_fab.dart';
 import 'package:habitflow/core/theme/theme_controller.dart';
+import 'package:habitflow/core/services/rate_service.dart';
 
 // ─────────────────────────────────────────────
 //  HOME SCREEN
@@ -38,6 +39,10 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     _load();
+    // Verifica se já passou 30 min para pedir avaliação
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      RateService().checkAndShowRateDialog(context);
+    });
   }
 
   void _load() {
@@ -90,6 +95,9 @@ class _HomeScreenState extends State<HomeScreen>
     final ctrl = TextEditingController(text: existing?.title ?? '');
     String cat = existing?.category ?? taskCategories.first.name;
     DateTime date = existing?.date ?? _selectedDate;
+    TimeOfDay time = TimeOfDay.fromDateTime(date);
+    bool notify = existing?.isNotificationEnabled ?? false;
+    int reminderMin = existing?.reminderMinutesBefore ?? 0;
 
     showDialog(
       context: context,
@@ -120,102 +128,128 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(l10n.category,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+
+                // Category
+                Text(l10n.category, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: cat,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Theme.of(ctx).colorScheme.surfaceVariant,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
-                  items: taskCategories
-                      .map(
-                        (c) => DropdownMenuItem(
-                          value: c.name,
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                margin: const EdgeInsets.only(right: 10),
-                                decoration: BoxDecoration(
-                                  color: c.color,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              Text(_getTranslatedCategory(context, c.name)),
-                            ],
-                          ),
-                        ),
-                      )
-                      .toList(),
+                  items: taskCategories.map((c) => DropdownMenuItem(value: c.name, child: Row(children: [
+                    Container(width: 10, height: 10, margin: const EdgeInsets.only(right: 10), decoration: BoxDecoration(color: c.color, shape: BoxShape.circle)),
+                    Text(_getTranslatedCategory(context, c.name)),
+                  ]))).toList(),
                   onChanged: (v) => set(() => cat = v!),
                 ),
                 const SizedBox(height: 16),
-                Text(l10n.date,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: ctx,
-                      initialDate: date,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) set(() => date = picked);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                    decoration: BoxDecoration(
-                      color: Theme.of(ctx).colorScheme.surfaceVariant,
-                      borderRadius: BorderRadius.circular(14),
+
+                // Date & Time Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(l10n.date, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: () async {
+                              final picked = await showDatePicker(context: ctx, initialDate: date, firstDate: DateTime(2020), lastDate: DateTime(2100));
+                              if (picked != null) set(() => date = picked);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              decoration: BoxDecoration(color: Theme.of(ctx).colorScheme.surfaceVariant, borderRadius: BorderRadius.circular(12)),
+                              child: Text(DateFormat("d MMM").format(date), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_today_rounded,
-                            size: 18,
-                            color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.5)),
-                        const SizedBox(width: 10),
-                        Text(
-                          DateFormat("EEE, d MMM yyyy", Localizations.localeOf(context).toString())
-                              .format(date),
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(l10n.time, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: () async {
+                              final picked = await showTimePicker(context: ctx, initialTime: time);
+                              if (picked != null) set(() => time = picked);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              decoration: BoxDecoration(color: Theme.of(ctx).colorScheme.surfaceVariant, borderRadius: BorderRadius.circular(12)),
+                              child: Text(time.format(ctx), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Notifications
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(color: Theme.of(ctx).colorScheme.primary.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        title: Text(l10n.enableNotification, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        value: notify,
+                        onChanged: (v) => set(() => notify = v),
+                        dense: true,
+                      ),
+                      if (notify)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: DropdownButtonFormField<int>(
+                            value: reminderMin,
+                            decoration: InputDecoration(
+                              labelText: l10n.reminderTime,
+                              labelStyle: const TextStyle(fontSize: 12),
+                              isDense: true,
+                              border: UnderlineInputBorder(borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary.withOpacity(0.2))),
+                            ),
+                            items: [0, 5, 15, 30, 60].map((m) => DropdownMenuItem(
+                              value: m,
+                              child: Text(m == 0 ? l10n.exactTime : "$m ${l10n.minBefore}", style: const TextStyle(fontSize: 13)),
+                            )).toList(),
+                            onChanged: (v) => set(() => reminderMin = v!),
+                          ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l10n.cancel),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
             FilledButton(
               onPressed: () async {
                 if (ctrl.text.trim().isEmpty) return;
-                final t = (existing ??
-                        Task(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          title: '',
-                          date: date,
-                          isDone: false,
-                          category: cat,
-                        ))
-                    .copyWith(
+                final finalDate = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+                final t = (existing ?? Task(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  title: '',
+                  date: finalDate,
+                  isDone: false,
+                  category: cat,
+                )).copyWith(
                   title: ctrl.text.trim(),
                   category: cat,
-                  date: date,
+                  date: finalDate,
+                  isNotificationEnabled: notify,
+                  reminderMinutesBefore: reminderMin,
                 );
                 await _repo.addTask(t);
                 _load();
@@ -255,110 +289,41 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: cs.onSurface.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                ),
+                Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: cs.onSurface.withOpacity(0.15), borderRadius: BorderRadius.circular(100))),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _CalNavBtn(
-                      icon: Icons.chevron_left_rounded,
-                      onTap: () => set(() => temp = DateTime(y, m - 1)),
-                    ),
-                    Text(
-                      DateFormat('MMMM yyyy', Localizations.localeOf(context).toString())
-                          .format(temp),
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                    ),
-                    _CalNavBtn(
-                      icon: Icons.chevron_right_rounded,
-                      onTap: () => set(() => temp = DateTime(y, m + 1)),
-                    ),
+                    _CalNavBtn(icon: Icons.chevron_left_rounded, onTap: () => set(() => temp = DateTime(y, m - 1))),
+                    Text(DateFormat('MMMM yyyy', Localizations.localeOf(context).toString()).format(temp), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                    _CalNavBtn(icon: Icons.chevron_right_rounded, onTap: () => set(() => temp = DateTime(y, m + 1))),
                   ],
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
-                      .map((d) => Expanded(
-                            child: Center(
-                              child: Text(d,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: cs.onSurface.withOpacity(0.35),
-                                  )),
-                            ),
-                          ))
-                      .toList(),
-                ),
+                Row(children: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => Expanded(child: Center(child: Text(d, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.onSurface.withOpacity(0.35)))))).toList()),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 280,
                   child: GridView.builder(
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: firstWD + totalDays,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 7,
-                      mainAxisSpacing: 4,
-                      crossAxisSpacing: 4,
-                    ),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, mainAxisSpacing: 4, crossAxisSpacing: 4),
                     itemBuilder: (_, i) {
                       if (i < firstWD) return const SizedBox();
                       final day = i - firstWD + 1;
                       final date = DateTime(y, m, day);
-                      final isSelected = date.year == _selectedDate.year &&
-                          date.month == _selectedDate.month &&
-                          date.day == _selectedDate.day;
-                      final isToday = date.year == DateTime.now().year &&
-                          date.month == DateTime.now().month &&
-                          date.day == DateTime.now().day;
-                      final hasTasks = _tasks.any((t) =>
-                          t.date.year == y && t.date.month == m && t.date.day == day);
+                      final isSelected = date.year == _selectedDate.year && date.month == _selectedDate.month && date.day == _selectedDate.day;
+                      final isToday = date.year == DateTime.now().year && date.month == DateTime.now().month && date.day == DateTime.now().day;
+                      final hasTasks = _tasks.any((t) => t.date.year == y && t.date.month == m && t.date.day == day);
 
                       return GestureDetector(
-                        onTap: () {
-                          setState(() => _selectedDate = date);
-                          Navigator.pop(context);
-                        },
+                        onTap: () { setState(() => _selectedDate = date); Navigator.pop(context); },
                         child: Container(
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? cs.primary
-                                : isToday
-                                    ? cs.primary.withOpacity(0.12)
-                                    : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                          decoration: BoxDecoration(color: isSelected ? cs.primary : isToday ? cs.primary.withOpacity(0.12) : Colors.transparent, borderRadius: BorderRadius.circular(10)),
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              Text(
-                                "$day",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight:
-                                      isSelected || isToday ? FontWeight.w700 : FontWeight.w400,
-                                  color: isSelected ? Colors.white : cs.onSurface,
-                                ),
-                              ),
-                              if (hasTasks && !isSelected)
-                                Positioned(
-                                  bottom: 4,
-                                  child: Container(
-                                    width: 4,
-                                    height: 4,
-                                    decoration: BoxDecoration(
-                                      color: cs.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
+                              Text("$day", style: TextStyle(fontSize: 13, fontWeight: isSelected || isToday ? FontWeight.w700 : FontWeight.w400, color: isSelected ? Colors.white : cs.onSurface)),
+                              if (hasTasks && !isSelected) Positioned(bottom: 4, child: Container(width: 4, height: 4, decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle))),
                             ],
                           ),
                         ),
@@ -381,16 +346,9 @@ class _HomeScreenState extends State<HomeScreen>
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final filtered = _tasksForDate;
+    filtered.sort((a, b) => a.date.compareTo(b.date)); // Sort by time
     final done = filtered.where((t) => t.isDone).length;
-    double progress = 0.0;
-
-    if (filtered.isNotEmpty) {
-      progress = done / filtered.length;
-    }
-
-    if (progress.isNaN || progress.isInfinite) {
-      progress = 0.0;
-    }
+    double progress = filtered.isEmpty ? 0.0 : done / filtered.length;
     final isToday = DateUtils.isSameDay(_selectedDate, DateTime.now());
     final l10n = AppLocalizations.of(context)!;
 
@@ -402,11 +360,7 @@ class _HomeScreenState extends State<HomeScreen>
       body: Column(
         children: [
           _buildHeader(context, cs, isDark, filtered, done, progress, isToday, l10n),
-          Expanded(
-            child: filtered.isEmpty
-                ? _buildEmpty(context, isToday, l10n)
-                : _buildTaskList(context, filtered, l10n),
-          ),
+          Expanded(child: filtered.isEmpty ? _buildEmpty(context, isToday, l10n) : _buildTaskList(context, filtered, l10n)),
         ],
       ),
     );
@@ -414,28 +368,10 @@ class _HomeScreenState extends State<HomeScreen>
 
   // ── Header ─────────────────────────────────
 
-  Widget _buildHeader(
-    BuildContext context,
-    ColorScheme cs,
-    bool isDark,
-    List<Task> filtered,
-    int done,
-    double progress,
-    bool isToday,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildHeader(BuildContext context, ColorScheme cs, bool isDark, List<Task> filtered, int done, double progress, bool isToday, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 56, 24, 20),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: cs.surface, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -446,39 +382,18 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      isToday
-                          ? l10n.today
-                          : DateFormat("EEEE", Localizations.localeOf(context).toString())
-                              .format(_selectedDate),
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: cs.onSurface,
-                        height: 1.1,
-                      ),
-                    ),
+                    Text(isToday ? l10n.today : DateFormat("EEEE", Localizations.localeOf(context).toString()).format(_selectedDate), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: cs.onSurface, height: 1.1)),
                     const SizedBox(height: 4),
                     GestureDetector(
                       onTap: _showPlanner,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.calendar_today_rounded,
-                              size: 13, color: cs.onSurface.withOpacity(0.4)),
+                          Icon(Icons.calendar_today_rounded, size: 13, color: cs.onSurface.withOpacity(0.4)),
                           const SizedBox(width: 5),
-                          Text(
-                            DateFormat("d MMMM yyyy", Localizations.localeOf(context).toString())
-                                .format(_selectedDate),
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: cs.onSurface.withOpacity(0.45),
-                            ),
-                          ),
+                          Text(DateFormat("d MMMM yyyy", Localizations.localeOf(context).toString()).format(_selectedDate), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: cs.onSurface.withOpacity(0.45))),
                           const SizedBox(width: 4),
-                          Icon(Icons.keyboard_arrow_down_rounded,
-                              size: 16, color: cs.onSurface.withOpacity(0.3)),
+                          Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: cs.onSurface.withOpacity(0.3)),
                         ],
                       ),
                     ),
@@ -490,21 +405,7 @@ class _HomeScreenState extends State<HomeScreen>
                 children: [
                   _ThemeToggle(controller: widget.themeController),
                   const SizedBox(height: 8),
-                  if (filtered.isNotEmpty)
-                    SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          ProgressRing(
-                            percentage: (progress * 100).clamp(0, 100),
-                            size: 48,
-                            strokeWidth: 4,
-                          ),
-                        ],
-                      ),
-                    ),
+                  if (filtered.isNotEmpty) SizedBox(width: 48, height: 48, child: Stack(alignment: Alignment.center, children: [ProgressRing(percentage: (progress * 100).clamp(0, 100), size: 48, strokeWidth: 4)])),
                 ],
               ),
             ],
@@ -512,33 +413,16 @@ class _HomeScreenState extends State<HomeScreen>
           const SizedBox(height: 20),
           Row(
             children: [
-              _NavButton(
-                icon: Icons.chevron_left_rounded,
-                onTap: () => setState(
-                    () => _selectedDate = _selectedDate.subtract(const Duration(days: 1))),
-              ),
+              _NavButton(icon: Icons.chevron_left_rounded, onTap: () => setState(() => _selectedDate = _selectedDate.subtract(const Duration(days: 1)))),
               const SizedBox(width: 10),
-              Expanded(
-                child: _TodayButton(
-                  isToday: isToday,
-                  onTap: () => setState(() => _selectedDate = DateTime.now()),
-                ),
-              ),
+              Expanded(child: _TodayButton(isToday: isToday, onTap: () => setState(() => _selectedDate = DateTime.now()))),
               const SizedBox(width: 10),
-              _NavButton(
-                icon: Icons.chevron_right_rounded,
-                onTap: () =>
-                    setState(() => _selectedDate = _selectedDate.add(const Duration(days: 1))),
-              ),
+              _NavButton(icon: Icons.chevron_right_rounded, onTap: () => setState(() => _selectedDate = _selectedDate.add(const Duration(days: 1)))),
             ],
           ),
           if (filtered.isNotEmpty) ...[
             const SizedBox(height: 16),
-            _DailyProgressBar(
-              done: done,
-              total: filtered.length,
-              progress: progress,
-            ),
+            _DailyProgressBar(done: done, total: filtered.length, progress: progress),
           ],
         ],
       ),
@@ -553,32 +437,12 @@ class _HomeScreenState extends State<HomeScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: cs.primary.withOpacity(0.07),
-            ),
-            child: Icon(Icons.task_alt_rounded, size: 52, color: cs.primary.withOpacity(0.6)),
-          ),
+          Container(padding: const EdgeInsets.all(28), decoration: BoxDecoration(shape: BoxShape.circle, color: cs.primary.withOpacity(0.07)), child: Icon(Icons.task_alt_rounded, size: 52, color: cs.primary.withOpacity(0.6))),
           const SizedBox(height: 20),
-          Text(
-            isToday ? l10n.noTasks : l10n.noTasksDay,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-          ),
+          Text(isToday ? l10n.noTasks : l10n.noTasksDay, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
-          Text(
-            isToday ? l10n.tapToAddFirst : l10n.nothingPlanned,
-            style: TextStyle(fontSize: 13, color: cs.onBackground.withOpacity(0.4)),
-          ),
-          if (isToday) ...[
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => _showTaskDialog(),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.addTask),
-            ),
-          ],
+          Text(isToday ? l10n.tapToAddFirst : l10n.nothingPlanned, style: TextStyle(fontSize: 13, color: cs.onBackground.withOpacity(0.4))),
+          if (isToday) ...[const SizedBox(height: 24), FilledButton.icon(onPressed: () => _showTaskDialog(), icon: const Icon(Icons.add), label: Text(l10n.addTask))],
         ],
       ),
     );
@@ -594,54 +458,31 @@ class _HomeScreenState extends State<HomeScreen>
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       children: [
         if (pending.isNotEmpty) ...[
-          _SectionLabel(
-            label: l10n.pending,
-            count: pending.length,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          ...pending
-              .asMap()
-              .entries
-              .map((e) => _buildTaskTile(context, e.value, tasks.indexOf(e.value), l10n)),
+          _SectionLabel(label: l10n.pending, count: pending.length, color: Theme.of(context).colorScheme.primary),
+          ...pending.asMap().entries.map((e) => _buildTaskTile(context, e.value, l10n)),
         ],
         if (completed.isNotEmpty) ...[
           const SizedBox(height: 8),
-          _SectionLabel(
-            label: l10n.completed,
-            count: completed.length,
-            color: Colors.green,
-          ),
-          ...completed
-              .asMap()
-              .entries
-              .map((e) => _buildTaskTile(context, e.value, tasks.indexOf(e.value), l10n)),
+          _SectionLabel(label: l10n.completed, count: completed.length, color: Colors.green),
+          ...completed.asMap().entries.map((e) => _buildTaskTile(context, e.value, l10n)),
         ],
       ],
     );
   }
 
-  Widget _buildTaskTile(BuildContext context, Task task, int idx, AppLocalizations l10n) {
+  Widget _buildTaskTile(BuildContext context, Task task, AppLocalizations l10n) {
     final color = _colorOf(task.category);
 
     return Dismissible(
       key: Key(task.id),
       direction: DismissDirection.endToStart,
       background: _SwipeBackground(l10n: l10n),
-      confirmDismiss: (_) async {
-        HapticFeedback.mediumImpact();
-        return true;
-      },
-      onDismissed: (_) async {
-        await _repo.deleteTask(task.id);
-        _load();
-      },
+      confirmDismiss: (_) async { HapticFeedback.mediumImpact(); return true; },
+      onDismissed: (_) async { await _repo.deleteTask(task.id); _load(); },
       child: Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: GestureDetector(
-          onLongPress: () {
-            HapticFeedback.mediumImpact();
-            _showTaskDialog(existing: task);
-          },
+          onLongPress: () { HapticFeedback.mediumImpact(); _showTaskDialog(existing: task); },
           child: _TaskCard(
             task: task,
             color: color,
@@ -685,68 +526,31 @@ class _TaskCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: done ? cs.surface.withOpacity(0.5) : cs.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: done ? cs.onSurface.withOpacity(0.06) : color.withOpacity(0.2),
-          width: 1.2,
-        ),
-        boxShadow: done
-            ? []
-            : [
-                BoxShadow(
-                  color: color.withOpacity(0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+        border: Border.all(color: done ? cs.onSurface.withOpacity(0.06) : color.withOpacity(0.2), width: 1.2),
+        boxShadow: done ? [] : [BoxShadow(color: color.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: 3,
-            height: 38,
-            decoration: BoxDecoration(
-              color: done ? cs.onSurface.withOpacity(0.15) : color,
-              borderRadius: BorderRadius.circular(4),
-            ),
+          Column(
+            children: [
+              Text(DateFormat("HH:mm").format(task.date), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: done ? cs.onSurface.withOpacity(0.3) : cs.primary)),
+              if (task.isNotificationEnabled) Padding(padding: const EdgeInsets.only(top: 4), child: Icon(Icons.notifications_active_outlined, size: 14, color: done ? cs.onSurface.withOpacity(0.2) : Colors.orange)),
+            ],
           ),
+          const SizedBox(width: 14),
+          AnimatedContainer(duration: const Duration(milliseconds: 300), width: 3, height: 38, decoration: BoxDecoration(color: done ? cs.onSurface.withOpacity(0.15) : color, borderRadius: BorderRadius.circular(4))),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  task.title,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: done ? cs.onSurface.withOpacity(0.35) : cs.onSurface,
-                    decoration: done ? TextDecoration.lineThrough : null,
-                    decorationColor: cs.onSurface.withOpacity(0.35),
-                  ),
-                ),
+                Text(task.title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: done ? cs.onSurface.withOpacity(0.35) : cs.onSurface, decoration: done ? TextDecoration.lineThrough : null, decorationColor: cs.onSurface.withOpacity(0.35))),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: done ? cs.onSurface.withOpacity(0.2) : color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      categoryLabel,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: done ? cs.onSurface.withOpacity(0.3) : color,
-                      ),
-                    ),
-                  ],
-                ),
+                Row(children: [
+                  Container(width: 7, height: 7, decoration: BoxDecoration(color: done ? cs.onSurface.withOpacity(0.2) : color, shape: BoxShape.circle)),
+                  const SizedBox(width: 5),
+                  Text(categoryLabel, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: done ? cs.onSurface.withOpacity(0.3) : color)),
+                ]),
               ],
             ),
           ),
@@ -756,14 +560,7 @@ class _TaskCard extends StatelessWidget {
               duration: const Duration(milliseconds: 250),
               width: 28,
               height: 28,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: done ? color : Colors.transparent,
-                border: Border.all(
-                  color: done ? color : cs.onSurface.withOpacity(0.2),
-                  width: 2,
-                ),
-              ),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: done ? color : Colors.transparent, border: Border.all(color: done ? color : cs.onSurface.withOpacity(0.2), width: 2)),
               child: done ? const Icon(Icons.check_rounded, color: Colors.white, size: 16) : null,
             ),
           ),
@@ -799,36 +596,12 @@ class _DailyProgressBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              "$done ${l10n.ofTotal} $total ${l10n.tasksDone}",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: cs.onSurface.withOpacity(0.45),
-              ),
-            ),
-            Text(
-              "$pct%",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: progress == 1.0 ? Colors.green : cs.primary,
-              ),
-            ),
+            Text("$done ${l10n.ofTotal} $total ${l10n.tasksDone}", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: cs.onSurface.withOpacity(0.45))),
+            Text("$pct%", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: progress == 1.0 ? Colors.green : cs.primary)),
           ],
         ),
         const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(100),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 5,
-            backgroundColor: cs.primary.withOpacity(0.1),
-            valueColor: AlwaysStoppedAnimation(
-              progress == 1.0 ? Colors.green : cs.primary,
-            ),
-          ),
-        ),
+        ClipRRect(borderRadius: BorderRadius.circular(100), child: LinearProgressIndicator(value: progress, minHeight: 5, backgroundColor: cs.primary.withOpacity(0.1), valueColor: AlwaysStoppedAnimation(progress == 1.0 ? Colors.green : cs.primary))),
       ],
     );
   }
@@ -855,31 +628,9 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8, left: 2),
       child: Row(
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.onBackground.withOpacity(0.45),
-              letterSpacing: 0.6,
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onBackground.withOpacity(0.45), letterSpacing: 0.6)),
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Text(
-              "$count",
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
-          ),
+          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(30)), child: Text("$count", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color))),
         ],
       ),
     );
@@ -898,21 +649,8 @@ class _SwipeBackground extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.red.withOpacity(0), Colors.red.shade600],
-          ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 26),
-            const SizedBox(height: 3),
-            Text(l10n.delete,
-                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
-          ],
-        ),
+        decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.red.withOpacity(0), Colors.red.shade600]), borderRadius: BorderRadius.circular(20)),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 26), const SizedBox(height: 3), Text(l10n.delete, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700))]),
       );
 }
 
@@ -929,18 +667,7 @@ class _CalNavBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: cs.surfaceVariant,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, size: 20, color: cs.onSurface),
-      ),
-    );
+    return GestureDetector(onTap: onTap, child: Container(width: 36, height: 36, decoration: BoxDecoration(color: cs.surfaceVariant, borderRadius: BorderRadius.circular(10)), child: Icon(icon, size: 20, color: cs.onSurface)));
   }
 }
 
@@ -966,26 +693,9 @@ class _NavButtonState extends State<_NavButton> {
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
+      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
       onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.92 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: cs.surfaceVariant,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: cs.onSurface.withOpacity(0.07)),
-          ),
-          child: Icon(widget.icon, size: 22, color: cs.onSurface),
-        ),
-      ),
+      child: AnimatedScale(scale: _pressed ? 0.92 : 1.0, duration: const Duration(milliseconds: 120), curve: Curves.easeOut, child: Container(width: 44, height: 44, decoration: BoxDecoration(color: cs.surfaceVariant, borderRadius: BorderRadius.circular(14), border: Border.all(color: cs.onSurface.withOpacity(0.07))), child: Icon(widget.icon, size: 22, color: cs.onSurface))),
     );
   }
 }
@@ -1013,37 +723,9 @@ class _TodayButtonState extends State<_TodayButton> {
     final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
+      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
       onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          height: 44,
-          decoration: BoxDecoration(
-            color: widget.isToday ? cs.primary.withOpacity(0.12) : cs.surfaceVariant,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: widget.isToday ? cs.primary.withOpacity(0.3) : cs.onSurface.withOpacity(0.07),
-            ),
-          ),
-          child: Center(
-            child: Text(
-              l10n.today,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-                color: widget.isToday ? cs.primary : cs.onSurface,
-              ),
-            ),
-          ),
-        ),
-      ),
+      child: AnimatedScale(scale: _pressed ? 0.95 : 1.0, duration: const Duration(milliseconds: 120), curve: Curves.easeOut, child: AnimatedContainer(duration: const Duration(milliseconds: 250), height: 44, decoration: BoxDecoration(color: widget.isToday ? cs.primary.withOpacity(0.12) : cs.surfaceVariant, borderRadius: BorderRadius.circular(14), border: Border.all(color: widget.isToday ? cs.primary.withOpacity(0.3) : cs.onSurface.withOpacity(0.07))), child: Center(child: Text(l10n.today, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: widget.isToday ? cs.primary : cs.onSurface))))),
     );
   }
 }
@@ -1069,53 +751,12 @@ class _ThemeToggle extends StatelessWidget {
         width: 60,
         height: 32,
         padding: const EdgeInsets.all(3),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
-          color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF6FCF97),
-          border: Border.all(
-            color: isDark ? Colors.white.withOpacity(0.1) : Colors.transparent,
-          ),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(30), color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF6FCF97), border: Border.all(color: isDark ? Colors.white.withOpacity(0.1) : Colors.transparent)),
         child: Stack(
           children: [
-            Positioned(
-              left: 2,
-              top: 0,
-              bottom: 0,
-              child: Icon(Icons.dark_mode_rounded,
-                  size: 14,
-                  color:
-                      isDark ? Colors.white.withOpacity(0.6) : Colors.white.withOpacity(0.3)),
-            ),
-            Positioned(
-              right: 2,
-              top: 0,
-              bottom: 0,
-              child: Icon(Icons.light_mode_rounded,
-                  size: 14,
-                  color:
-                      isDark ? Colors.white.withOpacity(0.3) : Colors.white.withOpacity(0.8)),
-            ),
-            AnimatedAlign(
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeInOutCubic,
-              alignment: isDark ? Alignment.centerLeft : Alignment.centerRight,
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            Positioned(left: 2, top: 0, bottom: 0, child: Icon(Icons.dark_mode_rounded, size: 14, color: isDark ? Colors.white.withOpacity(0.6) : Colors.white.withOpacity(0.3))),
+            Positioned(right: 2, top: 0, bottom: 0, child: Icon(Icons.light_mode_rounded, size: 14, color: isDark ? Colors.white.withOpacity(0.3) : Colors.white.withOpacity(0.8))),
+            AnimatedAlign(duration: const Duration(milliseconds: 350), curve: Curves.easeInOutCubic, alignment: isDark ? Alignment.centerLeft : Alignment.centerRight, child: Container(width: 24, height: 24, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 4, offset: const Offset(0, 1))]))),
           ],
         ),
       ),

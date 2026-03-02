@@ -19,12 +19,20 @@ class Task extends HiveObject {
   @HiveField(4)
   final String category;
 
+  @HiveField(5)
+  final bool isNotificationEnabled;
+
+  @HiveField(6)
+  final int? reminderMinutesBefore;
+
   Task({
     required this.id,
     required this.title,
     required this.date,
     required this.isDone,
     required this.category,
+    this.isNotificationEnabled = false,
+    this.reminderMinutesBefore,
   });
 
   Task copyWith({
@@ -33,6 +41,8 @@ class Task extends HiveObject {
     DateTime? date,
     bool? isDone,
     String? category,
+    bool? isNotificationEnabled,
+    int? reminderMinutesBefore,
   }) {
     return Task(
       id: id ?? this.id,
@@ -40,6 +50,8 @@ class Task extends HiveObject {
       date: date ?? this.date,
       isDone: isDone ?? this.isDone,
       category: category ?? this.category,
+      isNotificationEnabled: isNotificationEnabled ?? this.isNotificationEnabled,
+      reminderMinutesBefore: reminderMinutesBefore ?? this.reminderMinutesBefore,
     );
   }
 }

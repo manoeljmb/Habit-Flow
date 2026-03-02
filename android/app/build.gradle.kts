@@ -16,6 +16,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -36,22 +37,29 @@ android {
 
     defaultConfig {
         applicationId = "com.manel.habitflow.habitflow"
-        minSdk = flutter.minSdkVersion
+        minSdk = 24 // Atualizado conforme solicitado para o Google Play
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = 6 // Aumentado para refletir o novo lançamento
+        versionName = "1.0.5" // Aumentado conforme a versão do pubspec.yaml
     }
 
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true // Habilita minificação para diminuir o tamanho do app
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
 kotlin {
     jvmToolchain(17)
+}
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
 flutter {
     source = "../.."
